@@ -22,7 +22,9 @@ bool isValidIdentifier(char* str)
     if ((str[0] >= '0' && str[0] <= '9') || isDelimiter(str[0]))
         return false;
 
-    // Rule 4: Check that all middle characters are valid (letters, digits, or underscores)
+    if (str[length - 1] == '_')
+        return false;
+
     for (int i = 1; i < length; i++)
     {
         if (!((str[i] >= 'a' && str[i] <= 'z') ||
@@ -33,7 +35,5 @@ bool isValidIdentifier(char* str)
             return false;
         }
     }
-
-    // If all checks passed
     return true;
 }
