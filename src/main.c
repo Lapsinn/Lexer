@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
     // AND if the last 3 characters are ".ec"
     if (len < 3 || strcmp(filename + len - 3, ".ec") != 0) {
         fprintf(stderr, "Error: File must have the .ec extension (e.g., sample.ec).\n");
+        printf("Usage: %s <filename>\n", argv[1]);
         return 1;
     }
 
