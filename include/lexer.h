@@ -1,6 +1,8 @@
 #ifndef LEXER_H  
 #define LEXER_H
 
+#include <stddef.h>
+
 typedef enum {
     TOKEN_EOF,          // End-of-File
     TOKEN_IDENTIFIER,  
@@ -87,7 +89,11 @@ typedef struct {
 
 int lex(Lexer *lexer);
 
+static void add_token(Lexer *lexer, Token type, char *val);
+
 static void handle_identifier(Lexer *lexer);
+
+const char *token_type_to_string(Token type);
 
 Token handle_keyword(const char *start, size_t length);
 

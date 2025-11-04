@@ -5,6 +5,51 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Array of all reserved words/operators
+static const Keyword KEYWORDS[] = {
+    {"greaterequal", TOKEN_GREATEREQUAL},
+    {"lessequal",    TOKEN_LESSEQUAL},
+    {"remainder",    TOKEN_REMAINDER},
+    {"increase",     TOKEN_INCREASE},
+    {"decrease",     TOKEN_DECREASE},
+    {"greater",      TOKEN_GREATER},
+    {"less",         TOKEN_LESS},
+    {"scale",        TOKEN_SCALE},
+    {"split",        TOKEN_SPLIT},
+    {"plus",         TOKEN_PLUS},
+    {"min",          TOKEN_MIN},
+    {"mul",          TOKEN_MUL},
+    {"div",          TOKEN_DIV},
+    {"mod",          TOKEN_MOD},
+    {"idiv",         TOKEN_IDIV},
+    {"pow",          TOKEN_POW},
+    {"pos",          TOKEN_POS},
+    {"neg",          TOKEN_NEG},
+    {"next",         TOKEN_NEXT},
+    {"prev",         TOKEN_PREV},
+    {"is",           TOKEN_IS},
+    {"isnt",         TOKEN_ISNT},
+    {"and",          TOKEN_AND},
+    {"or",           TOKEN_OR},
+    {"not",          TOKEN_NOT},
+    {"set",          TOKEN_SET},
+    {"start",        TOKEN_START},
+    {"end",          TOKEN_END},
+    {"continue",     TOKEN_CONTINUE},
+    {"stop",         TOKEN_STOP},
+    {"if",           TOKEN_IF},
+    {"else",         TOKEN_ELSE},
+    {"while",        TOKEN_WHILE},
+    {"exit",         TOKEN_EXIT},
+    {"loop",         TOKEN_LOOP},
+    {"main",         TOKEN_MAIN},
+    {"true",         TOKEN_TRUE},
+    {"false",        TOKEN_FALSE}
+};
+
+// Calculate the number of entries in the array
+static const size_t KEYWORD_COUNT = sizeof(KEYWORDS) / sizeof(KEYWORDS[0]);
+
 int lex(Lexer *lexer) {
     while (*lexer->cur_tok != '\0') {
          switch (*lexer->cur_tok) {
@@ -96,7 +141,7 @@ int lex(Lexer *lexer) {
                     continue;
 
                 } else if (isalpha(*lexer->cur_tok) || *lexer->cur_tok == '_') {
-                    handle_word(lexer);
+                    handle_identifier(lexer);
                     continue;
 
                 } else {
@@ -111,6 +156,28 @@ int lex(Lexer *lexer) {
     }
     add_token(lexer, TOKEN_EOF, NULL);
     return 0;
+}
+
+static void add_token(Lexer *lexer, Token type, char *val) {
+    if (lexer->token_count == lexer->capacity) {
+        size_t new_capacity = lexer->capacity == 0 ? 8 : lexer->capacity * 2;
+        lexer->tokens = (TokenData *)realloc(lexer->tokens, new_capacity * sizeof(TokenData));
+        if (!lexer->tokens) {
+            perror("Error reallocating memory");
+            exit(1);
+        }
+
+        lexer->capacity = new_capacity;
+    }
+
+    lexer->tokens[lexer->token_count].type = type;
+    lexer->tokens[lexer->token_count].val = val;
+
+    // setting the location
+    lexer->tokens[lexer->token_count].loc.line = lexer->line_number;
+    lexer->tokens[lexer->token_count].loc.col = lexer->cur_tok - lexer->line_start;
+
+    lexer->token_count++;
 }
 
 static void handle_identifier(Lexer *lexer) {
@@ -203,59 +270,90 @@ void printLexerTokens(const Lexer *lexer) {
         const TokenData *token = &lexer->tokens[i];
         
         // Get the printable name for the token type
-        const char *token_name = getTokenName(token->type);
+        const char *token_name = token_type_to_string(token->type);
 
         // Print the lexeme and the token name
         printf("| %-20s | %-15s |\n", token->val, token_name);
-        
-        // Optional: Print location information if desired
-        // printf(" (L:%zu, C:%zu)\n", token->loc.line, token->loc.col);
     }
     
     printf("--------------------------------\n");
 }
 
-// Array of all reserved words/operators
-static const Keyword KEYWORDS[] = {
-    {"greaterequal", TOKEN_GREATEREQUAL},
-    {"lessequal",    TOKEN_LESSEQUAL},
-    {"remainder",    TOKEN_REMAINDER},
-    {"increase",     TOKEN_INCREASE},
-    {"decrease",     TOKEN_DECREASE},
-    {"greater",      TOKEN_GREATER},
-    {"less",         TOKEN_LESS},
-    {"scale",        TOKEN_SCALE},
-    {"split",        TOKEN_SPLIT},
-    {"plus",         TOKEN_PLUS},
-    {"min",          TOKEN_MIN},
-    {"mul",          TOKEN_MUL},
-    {"div",          TOKEN_DIV},
-    {"mod",          TOKEN_MOD},
-    {"idiv",         TOKEN_IDIV},
-    {"pow",          TOKEN_POW},
-    {"pos",          TOKEN_POS},
-    {"neg",          TOKEN_NEG},
-    {"next",         TOKEN_NEXT},
-    {"prev",         TOKEN_PREV},
-    {"is",           TOKEN_IS},
-    {"isnt",         TOKEN_ISNT},
-    {"and",          TOKEN_AND},
-    {"or",           TOKEN_OR},
-    {"not",          TOKEN_NOT},
-    {"set",          TOKEN_SET},
-    {"start",        TOKEN_START},
-    {"end",          TOKEN_END},
-    {"continue",     TOKEN_CONTINUE},
-    {"stop",         TOKEN_STOP},
-    {"if",           TOKEN_IF},
-    {"else",         TOKEN_ELSE},
-    {"while",        TOKEN_WHILE},
-    {"exit",         TOKEN_EXIT},
-    {"loop",         TOKEN_LOOP},
-    {"main",         TOKEN_MAIN},
-    {"true",         TOKEN_TRUE},
-    {"false",        TOKEN_FALSE}
-};
+const char *token_type_to_string(Token type) {
+    switch (type) {
+        // Core Tokens
+        case TOKEN_EOF:         return "TOKEN_EOF";
+        case TOKEN_IDENTIFIER:  return "TOKEN_IDENTIFIER";
+        case TOKEN_NUMBER:      return "TOKEN_NUMBER";
+        case TOKEN_DECIMAL:     return "TOKEN_DECIMAL";
+        case TOKEN_LETTER:      return "TOKEN_LETTER";
+        case TOKEN_WORD:        return "TOKEN_WORD";
+        case TOKEN_TRUE:        return "TOKEN_TRUE";
+        case TOKEN_FALSE:       return "TOKEN_FALSE";
+        case TOKEN_SEMICOLON:   return "TOKEN_SEMICOLON";
+        case TOKEN_COMMA:       return "TOKEN_COMMA";
+        
+        // Brackets/Punctuation
+        case TOKEN_LPAREN:      return "TOKEN_LPAREN";
+        case TOKEN_RPAREN:      return "TOKEN_RPAREN";
+        case TOKEN_LBRACE:      return "TOKEN_LBRACE";
+        case TOKEN_RBRACE:      return "TOKEN_RBRACE";
+        case TOKEN_LBRACKET:    return "TOKEN_LBRACKET";
+        case TOKEN_RBRACKET:    return "TOKEN_RBRACKET";
 
-// Calculate the number of entries in the array
-static const size_t KEYWORD_COUNT = sizeof(KEYWORDS) / sizeof(KEYWORDS[0]);
+ /*      // Keywords (Control Flow)
+        case TOKEN_START:       return "TOKEN_START";
+        case TOKEN_END:         return "TOKEN_END";
+        case TOKEN_CONTINUE:    return "TOKEN_CONTINUE";
+        case TOKEN_STOP:        return "TOKEN_STOP";
+        case TOKEN_IF:          return "TOKEN_IF";
+        case TOKEN_ELSE:        return "TOKEN_ELSE";
+        case TOKEN_WHILE:       return "TOKEN_WHILE";
+*/
+        // Value Setting Operators
+        case TOKEN_SET:         return "TOKEN_SET";
+        case TOKEN_INCREASE:    return "TOKEN_INCREASE";
+        case TOKEN_DECREASE:    return "TOKEN_DECREASE";
+        case TOKEN_SCALE:       return "TOKEN_SCALE";
+        case TOKEN_SPLIT:       return "TOKEN_SPLIT";
+        case TOKEN_REMAINDER:   return "TOKEN_REMAINDER";
+        
+        // Arithmetic Operators
+        case TOKEN_PLUS:        return "TOKEN_PLUS";
+        case TOKEN_MIN:         return "TOKEN_MIN";
+        case TOKEN_MUL:         return "TOKEN_MUL";
+        case TOKEN_DIV:         return "TOKEN_DIV";
+        case TOKEN_MOD:         return "TOKEN_MOD";
+        case TOKEN_IDIV:        return "TOKEN_IDIV";
+        case TOKEN_POW:         return "TOKEN_POW";
+        
+        // Single Value Operators (Unary)
+        case TOKEN_POS:         return "TOKEN_POS";
+        case TOKEN_NEG:         return "TOKEN_NEG";
+        case TOKEN_NEXT:        return "TOKEN_NEXT";
+        case TOKEN_PREV:        return "TOKEN_PREV";
+        
+        // Comparison Operators (Relational)
+        case TOKEN_IS:          return "TOKEN_IS";
+        case TOKEN_ISNT:        return "TOKEN_ISNT";
+        case TOKEN_GREATER:     return "TOKEN_GREATER";
+        case TOKEN_LESS:        return "TOKEN_LESS";
+        case TOKEN_GREATEREQUAL: return "TOKEN_GREATEREQUAL";
+        case TOKEN_LESSEQUAL:   return "TOKEN_LESSEQUAL";
+        
+        // Logic Operators
+        case TOKEN_AND:         return "TOKEN_AND";
+        case TOKEN_OR:          return "TOKEN_OR";
+        case TOKEN_NOT:         return "TOKEN_NOT";
+        
+        // Reserved Words
+        case TOKEN_EXIT:        return "TOKEN_EXIT";
+        case TOKEN_LOOP:        return "TOKEN_LOOP";
+        case TOKEN_MAIN:        return "TOKEN_MAIN";
+
+        default:
+            // This case handles any unlisted or unknown token types, 
+            // preventing the function from returning garbage.
+            return "TOKEN_UNKNOWN";
+    }
+}

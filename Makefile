@@ -1,54 +1,44 @@
-# --- Makefile for C Lexer Project using .ec source files ---
-
-SHELL = /bin/bash 
-
-# Compiler and Flags
+# Define the compiler and flags
 CC = gcc
-# -Iinclude tells the compiler where to find your header file (lexer.h)
-CFLAGS = -Wall -Wextra -std=c11 -Iinclude
-LDFLAGS = 
+CFLAGS = -Wall -Wextra -std=c99 -Iinclude # -Iinclude tells the compiler where to find .h files
 
-# Directories
-SRC_DIR = src
-OBJ_DIR = obj
-BIN_DIR = bin
-INC_DIR = include
+# Define the executable name
+TARGET = main
 
-# Target executable name
-TARGET = $(BIN_DIR)/lex_analyzer
+# Define source and object files
+SRCS = src/main.c src/lexer.c
+OBJS = $(SRCS:.c=.o) # Replaces .c with .o to get the object file names (src/main.o src/lexer.o)
 
-# Source and Object Files
-# Finds all .ec files in the src directory, treating them as source code
-SRCS = $(wildcard $(SRC_DIR)/*.ec)
-# Substitutes the .ec extension with .o and changes the directory from src to obj
-OBJS = $(patsubst $(SRC_DIR)/%.ec,$(OBJ_DIR)/%.o,$(SRCS))
+# --- Default Target: Build the Executable ---
+all: $(TARGET)
 
-# --- Rules ---
-
-# Default target: make all
-.PHONY: all
-all: directories $(TARGET)
-
-# Rule 1: Link the object files to create the executable
 $(TARGET): $(OBJS)
-	@echo "🔗 Linking executable: $@"
-	$(CC) $(OBJS) -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $^ -o $@
 
-# Rule 2: Compile .ec source files into object files
-# This pattern rule now explicitly handles the compilation of .ec files.
-# We instruct GCC to compile it as a C file using the -x c flag.
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.ec $(INC_DIR)/lexer.h
-	@echo "🔨 Compiling C source file $< (as .ec) -> $@"
-	# -x c tells GCC to treat the input file as C code, regardless of extension
-	$(CC) $(CFLAGS) -x c -c $< -o $@
+# --- Rule to compile .c files into .o files ---
+# VPATH tells make to look in 'src' for prerequisites (like the .c files)
+VPATH = src
 
-# Rule 3: Create necessary directories
-directories:
-	@mkdir -p $(BIN_DIR)
-	@mkdir -p $(OBJ_DIR)
+# The pattern rule: how to make a .o from a .c
+%.o: %.c include/lexer.h
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Rule 4: Clean up build files
-.PHONY: clean
+# --- Target for Running the Program ---
+# 'run' target with an optional argument for file input
+# Usage: make run ARG=my_file.txt
+run: $(TARGET)
+	@echo "--- Running $(TARGET) ---"
+ifdef ARG
+	./$(TARGET) $(ARG)
+else
+	./$(TARGET)
+endif
+	@echo "-------------------------"
+
+# --- Utility Targets ---
+# Clean up the generated files
 clean:
-	@echo "🧹 Cleaning up build directories..."
-	@rm -rf $(OBJ_DIR) $(BIN_DIR)
+	rm -f $(TARGET) $(OBJS)
+	@echo "Cleaned up $(TARGET) and object files."
+
+.PHONY: all clean run
