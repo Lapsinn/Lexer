@@ -20,7 +20,6 @@ typedef enum {
     TOKEN_LBRACKET, TOKEN_RBRACKET,       
 
     //Keywords
-/*  TOKEN_KEYWORD,
     TOKEN_AND,
     TOKEN_ASK,
     TOKEN_BY,
@@ -29,7 +28,7 @@ typedef enum {
     TOKEN_REPEAT,
     TOKEN_SHOW,
     TOKEN_TO,
-*/
+
     TOKEN_START,
     TOKEN_END,
     TOKEN_CONTINUE,
@@ -50,9 +49,6 @@ typedef enum {
     // Comparison Operators (Relational)
     TOKEN_IS, TOKEN_ISNT, TOKEN_GREATER, TOKEN_LESS,
     TOKEN_GREATEREQUAL, TOKEN_LESSEQUAL,
-    
-    // Logic Operators
-    TOKEN_AND, TOKEN_OR, TOKEN_NOT,
     
     //Reserved Words
     TOKEN_EXIT,
@@ -102,5 +98,7 @@ const char* get_keyword_static_text(Token type);
 void printLexerTokens(const Lexer *lexer);
 
 void free_lexer(Lexer *lexer);
+
+//void to_lower_case(char *str, size_t length)
 
 #endif
