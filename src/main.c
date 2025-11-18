@@ -50,6 +50,8 @@ int main(int argc, char *argv[]) {
     // read the file into the buffer
     fread(buffer, 1, file_size, file);
     buffer[file_size] = '\0'; // Null-terminate the string
+    printf("File size: %ld\n", file_size);
+    printf("Last 50 chars: [%s]\n", buffer + (file_size > 50 ? file_size - 50 : 0));
     fclose(file);
 
     // Call the lex function (to be implemented)

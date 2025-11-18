@@ -1,12 +1,14 @@
 #include "lexer.h"
 
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 int lex(Lexer *lexer) {
     while (*lexer->cur_tok != '\0') {
+      //  printf("Current char: '%c'\n", *lexer->cur_tok);
         switch (*lexer->cur_tok) {
             case ' ':
                 // do nothing
@@ -42,6 +44,12 @@ int lex(Lexer *lexer) {
             case '#':
                 while (*lexer->cur_tok != '\n' && *lexer->cur_tok != '\0') lexer->cur_tok++;
                 break;
+            case ':':
+                add_token(lexer, TOKEN_COLON, ":");
+                break;
+            case '.':
+                add_token(lexer, TOKEN_DOT, ".");
+                break;
             case '+':
                 add_token(lexer, TOKEN_PLUS, "+");
                 break;
@@ -57,8 +65,17 @@ int lex(Lexer *lexer) {
             case '%':
                 add_token(lexer, TOKEN_MOD, "%");
                 break;
+            case '~':
+                add_token(lexer, TOKEN_IDIV, "~");
+                break;
+            case '^':
+                add_token(lexer, TOKEN_POW, "^");
+                break;
+            case '\\':
+                add_token(lexer, TOKEN_NONE, "\\");
+                break;
             case '>': {
-                if (*(lexer->cur_tok + 1) == "=") {
+                if (*(lexer->cur_tok + 1) == '=') {
                     lexer->cur_tok++; 
                     add_token(lexer, TOKEN_GREATEREQUAL, ">="); 
                 } else {
@@ -69,7 +86,7 @@ int lex(Lexer *lexer) {
             }
 
             case '<': {
-                if (*(lexer->cur_tok + 1) == "=") {
+                if (*(lexer->cur_tok + 1) == '=') {
                     lexer->cur_tok++; 
                     add_token(lexer, TOKEN_LESSEQUAL, "<="); 
                 } else {
@@ -81,22 +98,44 @@ int lex(Lexer *lexer) {
             }
 
             case '=': {
-                if (*(lexer->cur_tok + 1) == "=") {
+                if (*(lexer->cur_tok + 1) == '=') {
                     lexer->cur_tok++; 
                     add_token(lexer, TOKEN_IS, "=="); 
                 } else {
-                    add_token(lexer, TOKEN_SET, lexer->cur_tok, 1);
+                    add_token(lexer, TOKEN_SET, "=");
                 }
                 lexer->cur_tok++;
                 break;
             }
 
             case '!': {
-                if (*(lexer->cur_tok + 1) == "=") {
+                if (*(lexer->cur_tok + 1) == '=') {
                     lexer->cur_tok++; 
                     add_token(lexer, TOKEN_ISNT, "!="); 
                 } else {
                     add_token(lexer, TOKEN_NOT, "!");
+                }
+                lexer->cur_tok++; 
+                break;
+            }
+            case '&': {
+                if (*(lexer->cur_tok + 1) == '&') {
+                    lexer->cur_tok++; 
+                    add_token(lexer, TOKEN_AND, "&&"); 
+                } else {
+                    fprintf(stderr, "%zu: Error: Unexpected character '&'\n", lexer->line_number);
+                    return 1; 
+                }
+                lexer->cur_tok++; 
+                break;
+            }
+            case '|': {
+                if (*(lexer->cur_tok + 1) == '|') {
+                    lexer->cur_tok++; 
+                    add_token(lexer, TOKEN_OR, "||"); 
+                } else {
+                    fprintf(stderr, "%zu: Error: Unexpected character '|'\n", lexer->line_number);
+                    return 1; 
                 }
                 lexer->cur_tok++; 
                 break;
@@ -121,8 +160,32 @@ int lex(Lexer *lexer) {
                     
                     strncpy(text, str_start, str_len);
                     text[str_len] = '\0';
-                    add_token(lexer, TOKEN_WORD, text);
+                    add_token(lexer, TOKEN_STRING_LITERAL, text);
                     lexer->cur_tok++;
+                    continue;
+
+                } else if (*lexer->cur_tok == '\'') {
+                    lexer->cur_tok++;
+                    char *char_start = lexer->cur_tok;
+                    
+                    if (*lexer->cur_tok == '\0') {
+                        fprintf(stderr, "%zu: Error: Unterminated character literal.\n", lexer->line_number);
+                        return 1; 
+                    }
+                    
+                    char value = *lexer->cur_tok;
+                    lexer->cur_tok++;
+                    
+                    if (*lexer->cur_tok != '\'') {
+                        fprintf(stderr, "%zu: Error: Missing closing quote for character literal.\n", lexer->line_number);
+                        return 1; 
+                    }
+                    
+                    char *char_str = (char *)malloc(2);
+                    char_str[0] = value;
+                    char_str[1] = '\0';
+                    add_token(lexer, TOKEN_CHAR_LITERAL, char_str);
+                    lexer->cur_tok++; // Move past the closing quote
                     continue;
 
                 } else if (isalpha(*lexer->cur_tok) || *lexer->cur_tok == '_') {
@@ -134,13 +197,21 @@ int lex(Lexer *lexer) {
                         }
                     continue; 
                 } else {
+                    fprintf(stderr, "Unknown token: %c\n", *(lexer->cur_tok-3));
+                    fprintf(stderr, "Unknown token: %c\n", *(lexer->cur_tok-2));                    
+                    fprintf(stderr, "Unknown token: %c\n", *(lexer->cur_tok-1));
                     fprintf(stderr, "Unknown token: %c\n", *lexer->cur_tok);
+                    fprintf(stderr, "Unknown token at line %zu, col %zu: '%c' (ASCII: %d)\n", 
+                            lexer->line_number, 
+                            lexer->cur_tok - lexer->line_start,
+                            *lexer->cur_tok,
+                            (int)*lexer->cur_tok);
                     return 1;
                 }
                 break;
 
          }
-        // advance token
+        // advance token 
         lexer->cur_tok++;
     }
     add_token(lexer, TOKEN_EOF, NULL);
@@ -178,7 +249,7 @@ static void handle_identifier(Lexer *lexer) {
     }
 
     while (isalnum(*lexer->cur_tok) || *lexer->cur_tok == '_') {
-        //printf("Current char in identifier: '%c'\n", *lexer->cur_tok); // Debugging line
+    //    printf("Current char in identifier: '%c'\n", *lexer->cur_tok); // Debugging line
         lexer->cur_tok++;
     } 
 
@@ -195,7 +266,7 @@ static void handle_identifier(Lexer *lexer) {
 
     strncpy(identifier, str_start, str_len);
     identifier[str_len] = '\0';
-
+    printf("Identified identifier: '%s'\n", identifier); // Debugging line
     if (keyword_token != TOKEN_IDENTIFIER) {
 
         add_token(lexer, keyword_token, identifier);
@@ -243,10 +314,7 @@ int handle_number_token(Lexer *lexer) {
     strncpy(number_str, str_start, str_len);
     number_str[str_len] = '\0';
 
-    add_token(lexer,
-        decimal_count >= 1 ? TOKEN_DECIMAL : TOKEN_NUMBER, 
-        number_str, 
-    );
+    add_token(lexer, decimal_count >= 1 ? TOKEN_DECIMAL : TOKEN_NUMBER, number_str);
     
     return 0; 
 }
@@ -276,9 +344,7 @@ Token handle_keyword(const char *input_word, size_t word_length) {
             }
         }
 
-        if (current_state == S_IDENTIFIER) {
-            current_state = S_IDENTIFIER;
-        } else if (!transition_found) {
+         if (!transition_found || current_state == S_IDENTIFIER) {
             current_state = S_IDENTIFIER;
         } else {
             current_state = next_state;
@@ -315,12 +381,11 @@ void free_lexer(Lexer *lexer) {
 
 void printLexerTokens(const Lexer *lexer) {
     
-    // Print the header that matches the desired format
     printf("\n\n--------------------------------\n");
     printf("| %-20s | %-15s |\n", "Lexeme", "Token");
     printf("--------------------------------\n");
 
-    // Iterate through all tokens in the array
+ 
     for (size_t i = 0; i < lexer->token_count; i++) {
         const TokenData *token = &lexer->tokens[i];
         
@@ -345,6 +410,7 @@ void to_lower_case(char *str, size_t length) {
     }
 }
 
+static const StateNode keyword_states[] = {
     [S_START] = {S_START, TOKEN_NONE, {
         {'a', S_A}, {'o', S_O}, {'n', S_N}, {'s', S_S}, {'e', S_E}, 
         {'c', S_C}, {'i', S_I}, {'w', S_W}, {'l', S_L}, {'m', S_M},
@@ -477,17 +543,10 @@ void to_lower_case(char *str, size_t length) {
     [S_WHILE] = {S_WHILE, TOKEN_WHILE, {}, 0},
     [S_WO] = {S_WO, TOKEN_NONE, {{'r', S_WOR}}, 1},
     [S_WOR] = {S_WOR, TOKEN_NONE, {{'d', S_WORD}}, 1},
-    [S_WORD] = {S_WORD, TOKEN_WORD, {}, 0}
+    [S_WORD] = {S_WORD, TOKEN_WORD, {}, 0},
 
     [S_IDENTIFIER] = {S_IDENTIFIER, TOKEN_IDENTIFIER, {}, 0}
 };
-
-const StateNode* get_node(State s) {
-    if (s >= 0 && s < NUM_STATES) {
-        return &MACHINE_DEF[s];
-    }
-    return NULL; 
-}
 
 const StateNode MACHINE_DEF[NUM_STATES] = {
     [S_START] = {S_START, TOKEN_NONE, {
@@ -627,82 +686,95 @@ const StateNode MACHINE_DEF[NUM_STATES] = {
     [S_IDENTIFIER] = {S_IDENTIFIER, TOKEN_IDENTIFIER, {{0}}, 0}
 };
 
+const StateNode* get_node(State s) {
+    if (s >= 0 && s < NUM_STATES) {
+        return &MACHINE_DEF[s];
+    }
+    return NULL; 
+}
+
 
 const char *token_type_to_string(Token type) {
     switch (type) {
-        // Core Tokens
-        case TOKEN_EOF:         return "TOKEN_EOF";
-        case TOKEN_IDENTIFIER:  return "TOKEN_IDENTIFIER";
-        case TOKEN_NUMBER:      return "TOKEN_NUMBER";
-        case TOKEN_DECIMAL:     return "TOKEN_DECIMAL";
-        case TOKEN_LETTER:      return "TOKEN_LETTER";
-        case TOKEN_WORD:        return "TOKEN_WORD";
-        case TOKEN_TRUE:        return "TOKEN_TRUE";
-        case TOKEN_FALSE:       return "TOKEN_FALSE";
-        case TOKEN_SEMICOLON:   return "TOKEN_SEMICOLON";
-        case TOKEN_COMMA:       return "TOKEN_COMMA";
-        
-        // Brackets/Punctuation
-        case TOKEN_LPAREN:      return "TOKEN_LPAREN";
-        case TOKEN_RPAREN:      return "TOKEN_RPAREN";
-        case TOKEN_LBRACE:      return "TOKEN_LBRACE";
-        case TOKEN_RBRACE:      return "TOKEN_RBRACE";
-        case TOKEN_LBRACKET:    return "TOKEN_LBRACKET";
-        case TOKEN_RBRACKET:    return "TOKEN_RBRACKET";
+        case TOKEN_EOF:             return "TOKEN_EOF";
+        case TOKEN_IDENTIFIER:      return "TOKEN_IDENTIFIER";
+        case TOKEN_NUMBER:          return "TOKEN_NUMBER";
+        case TOKEN_DECIMAL:         return "TOKEN_DECIMAL";
+        case TOKEN_LETTER:          return "TOKEN_LETTER";
+        case TOKEN_WORD:            return "TOKEN_WORD";
+        case TOKEN_TRUE:            return "TOKEN_TRUE";
+        case TOKEN_FALSE:           return "TOKEN_FALSE";
+        case TOKEN_SEMICOLON:       return "TOKEN_SEMICOLON";
+        case TOKEN_COMMA:           return "TOKEN_COMMA";
+     
+        case TOKEN_STRING_LITERAL:  return "TOKEN_STRING_LITERAL";
+//      case TOKEN_ASSIGN:          return "TOKEN_ASSIGN";
+        case TOKEN_COLON:           return "TOKEN_COLON";
+        case TOKEN_DOT:             return "TOKEN_DOT";
+      
+        case TOKEN_LPAREN:          return "TOKEN_LPAREN";
+        case TOKEN_RPAREN:          return "TOKEN_RPAREN";
+        case TOKEN_LBRACE:          return "TOKEN_LBRACE";
+        case TOKEN_RBRACE:          return "TOKEN_RBRACE";
+        case TOKEN_LBRACKET:        return "TOKEN_LBRACKET";
+        case TOKEN_RBRACKET:        return "TOKEN_RBRACKET";
 
-       // Keywords (Control Flow)
-        case TOKEN_START:       return "TOKEN_START";
-        case TOKEN_END:         return "TOKEN_END";
-        case TOKEN_CONTINUE:    return "TOKEN_CONTINUE";
-        case TOKEN_STOP:        return "TOKEN_STOP";
-        case TOKEN_IF:          return "TOKEN_IF";
-        case TOKEN_ELSE:        return "TOKEN_ELSE";
-        case TOKEN_WHILE:       return "TOKEN_WHILE";
+        case TOKEN_START:           return "TOKEN_START";
+        case TOKEN_END:             return "TOKEN_END";
+        case TOKEN_CONTINUE:        return "TOKEN_CONTINUE";
+        case TOKEN_STOP:            return "TOKEN_STOP";
+        case TOKEN_IF:              return "TOKEN_IF";
+        case TOKEN_ELSE:            return "TOKEN_ELSE";
+        case TOKEN_WHILE:           return "TOKEN_WHILE";
 
-        // Value Setting Operators
-        case TOKEN_SET:         return "TOKEN_SET";
-        case TOKEN_INCREASE:    return "TOKEN_INCREASE";
-        case TOKEN_DECREASE:    return "TOKEN_DECREASE";
-        case TOKEN_SCALE:       return "TOKEN_SCALE";
-        case TOKEN_SPLIT:       return "TOKEN_SPLIT";
-        case TOKEN_REMAINDER:   return "TOKEN_REMAINDER";
+        case TOKEN_ASK:             return "TOKEN_ASK";
+        case TOKEN_BY:              return "TOKEN_BY";
+        case TOKEN_REPEAT:          return "TOKEN_REPEAT";
+        case TOKEN_SHOW:            return "TOKEN_SHOW";
+        case TOKEN_TO:              return "TOKEN_TO";
         
-        // Arithmetic Operators
-        case TOKEN_PLUS:        return "TOKEN_PLUS";
-        case TOKEN_MIN:         return "TOKEN_MIN";
-        case TOKEN_MUL:         return "TOKEN_MUL";
-        case TOKEN_DIV:         return "TOKEN_DIV";
-        case TOKEN_MOD:         return "TOKEN_MOD";
-        case TOKEN_IDIV:        return "TOKEN_IDIV";
-        case TOKEN_POW:         return "TOKEN_POW";
+        case TOKEN_THAN:            return "TOKEN_THAN";
+        case TOKEN_EACH:            return "TOKEN_EACH";
+        case TOKEN_OF:              return "TOKEN_OF";
+        case TOKEN_THEN:            return "TOKEN_THEN";
+        case TOKEN_ALSO:            return "TOKEN_ALSO";
+
+        case TOKEN_SET:             return "TOKEN_SET";
+        case TOKEN_INCREASE:        return "TOKEN_INCREASE";
+        case TOKEN_DECREASE:        return "TOKEN_DECREASE";
+        case TOKEN_SCALE:           return "TOKEN_SCALE";
+        case TOKEN_SPLIT:           return "TOKEN_SPLIT";
+        case TOKEN_REMAINDER:       return "TOKEN_REMAINDER";
         
-        // Single Value Operators (Unary)
-        case TOKEN_POS:         return "TOKEN_POS";
-        case TOKEN_NEG:         return "TOKEN_NEG";
-        case TOKEN_NEXT:        return "TOKEN_NEXT";
-        case TOKEN_PREV:        return "TOKEN_PREV";
+        case TOKEN_PLUS:            return "TOKEN_PLUS";
+        case TOKEN_MIN:             return "TOKEN_MIN";
+        case TOKEN_MUL:             return "TOKEN_MUL";
+        case TOKEN_DIV:             return "TOKEN_DIV";
+        case TOKEN_MOD:             return "TOKEN_MOD";
+        case TOKEN_IDIV:            return "TOKEN_IDIV";
+        case TOKEN_POW:             return "TOKEN_POW";
         
-        // Comparison Operators (Relational)
-        case TOKEN_IS:          return "TOKEN_IS";
-        case TOKEN_ISNT:        return "TOKEN_ISNT";
-        case TOKEN_GREATER:     return "TOKEN_GREATER";
-        case TOKEN_LESS:        return "TOKEN_LESS";
-        case TOKEN_GREATEREQUAL: return "TOKEN_GREATEREQUAL";
-        case TOKEN_LESSEQUAL:   return "TOKEN_LESSEQUAL";
+        case TOKEN_POS:             return "TOKEN_POS";
+        case TOKEN_NEG:             return "TOKEN_NEG";
+        case TOKEN_NEXT:            return "TOKEN_NEXT";
+        case TOKEN_PREV:            return "TOKEN_PREV";
+        
+        case TOKEN_IS:              return "TOKEN_IS";
+        case TOKEN_ISNT:            return "TOKEN_ISNT";
+        case TOKEN_GREATER:         return "TOKEN_GREATER";
+        case TOKEN_LESS:            return "TOKEN_LESS";
+        case TOKEN_GREATEREQUAL:    return "TOKEN_GREATEREQUAL";
+        case TOKEN_LESSEQUAL:       return "TOKEN_LESSEQUAL";
     
-        // Logic Operators
-        case TOKEN_AND:         return "TOKEN_AND";
-        case TOKEN_OR:          return "TOKEN_OR";
-        case TOKEN_NOT:         return "TOKEN_NOT";
+        case TOKEN_AND:             return "TOKEN_AND";
+        case TOKEN_OR:              return "TOKEN_OR";
+        case TOKEN_NOT:             return "TOKEN_NOT";
         
-        // Reserved Words
-        case TOKEN_EXIT:        return "TOKEN_EXIT";
-        case TOKEN_LOOP:        return "TOKEN_LOOP";
-        case TOKEN_MAIN:        return "TOKEN_MAIN";
+        case TOKEN_EXIT:            return "TOKEN_EXIT";
+        case TOKEN_LOOP:            return "TOKEN_LOOP";
+        case TOKEN_MAIN:            return "TOKEN_MAIN";
 
         default:
-            // This case handles any unlisted or unknown token types, 
-            // preventing the function from returning garbage.
             return "TOKEN_UNKNOWN";
     }
 }
