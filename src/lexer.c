@@ -266,7 +266,7 @@ static void handle_identifier(Lexer *lexer) {
 
     strncpy(identifier, str_start, str_len);
     identifier[str_len] = '\0';
-    printf("Identified identifier: '%s'\n", identifier); // Debugging line
+    //printf("Identified identifier: '%s'\n", identifier); // Debugging line
     if (keyword_token != TOKEN_IDENTIFIER) {
 
         add_token(lexer, keyword_token, identifier);
@@ -374,8 +374,6 @@ void free_lexer(Lexer *lexer) {
             free(lexer->tokens[i].val);
         }
     }
-    
-    // 3. Free the main array holding the TokenData structs
     free(lexer->tokens);
 }
 
@@ -409,144 +407,6 @@ void to_lower_case(char *str, size_t length) {
         str[i] = tolower((unsigned char)str[i]);
     }
 }
-
-static const StateNode keyword_states[] = {
-    [S_START] = {S_START, TOKEN_NONE, {
-        {'a', S_A}, {'o', S_O}, {'n', S_N}, {'s', S_S}, {'e', S_E}, 
-        {'c', S_C}, {'i', S_I}, {'w', S_W}, {'l', S_L}, {'m', S_M},
-        {'t', S_T}, {'f', S_F}, {'b', S_B}, {'d', S_D}, {'g', S_G},
-        {'r', S_R}
-    }, 16},
-
-    [S_A] = {S_A, TOKEN_NONE, {{'n', S_AN}, {'s', S_AS}, {'l', S_AL}}, 3},
-    [S_AN] = {S_AN, TOKEN_NONE, {{'d', S_AND}}, 1},
-    [S_AND] = {S_AND, TOKEN_AND, {}, 0},
-    [S_AS] = {S_AS, TOKEN_NONE, {{'k', S_ASK}}, 1},
-    [S_ASK] = {S_ASK, TOKEN_ASK, {}, 0},
-    [S_AL] = {S_AL, TOKEN_NONE, {{'s', S_ALS}}, 1},
-    [S_ALS] = {S_ALS, TOKEN_NONE, {{'o', S_ALSO}}, 1},
-    [S_ALSO] = {S_ALSO, TOKEN_ALSO, {}, 0},
-
-    [S_B] = {S_B, TOKEN_NONE, {{'y', S_BY}}, 1},
-    [S_BY] = {S_BY, TOKEN_BY, {}, 0},
-
-    [S_C] = {S_C, TOKEN_NONE, {{'o', S_CO}}, 1},
-    [S_CO] = {S_CO, TOKEN_NONE, {{'n', S_CON}}, 1},
-    [S_CON] = {S_CON, TOKEN_NONE, {{'t', S_CONT}}, 1},
-    [S_CONT] = {S_CONT, TOKEN_NONE, {{'i', S_CONTI}}, 1},
-    [S_CONTI] = {S_CONTI, TOKEN_NONE, {{'n', S_CONTIN}}, 1},
-    [S_CONTIN] = {S_CONTIN, TOKEN_NONE, {{'u', S_CONTINU}}, 1},
-    [S_CONTINU] = {S_CONTINU, TOKEN_NONE, {{'e', S_CONTINUE}}, 1},
-    [S_CONTINUE] = {S_CONTINUE, TOKEN_CONTINUE, {}, 0},
-
-    [S_D] = {S_D, TOKEN_NONE, {{'e', S_DE}}, 1},
-    [S_DE] = {S_DE, TOKEN_NONE, {{'c', S_DEC}}, 1},
-    [S_DEC] = {S_DEC, TOKEN_NONE, {{'i', S_DECI}}, 1},
-    [S_DECI] = {S_DECI, TOKEN_NONE, {{'m', S_DECIM}}, 1},
-    [S_DECIM] = {S_DECIM, TOKEN_NONE, {{'a', S_DECIMA}}, 1},
-    [S_DECIMA] = {S_DECIMA, TOKEN_NONE, {{'l', S_DECIMAL}}, 1},
-    [S_DECIMAL] = {S_DECIMAL, TOKEN_DECIMAL, {}, 0},
-
-    [S_E] = {S_E, TOKEN_NONE, {{'n', S_EN}, {'l', S_EL}, {'x', S_EX}, {'a', S_EA}}, 4},
-    [S_EN] = {S_EN, TOKEN_NONE, {{'d', S_END}}, 1},
-    [S_END] = {S_END, TOKEN_END, {}, 0},
-    [S_EL] = {S_EL, TOKEN_NONE, {{'s', S_ELS}}, 1},
-    [S_ELS] = {S_ELS, TOKEN_NONE, {{'e', S_ELSE}}, 1},
-    [S_ELSE] = {S_ELSE, TOKEN_ELSE, {}, 0},
-    [S_EX] = {S_EX, TOKEN_NONE, {{'i', S_EXI}}, 1},
-    [S_EXI] = {S_EXI, TOKEN_NONE, {{'t', S_EXIT}}, 1},
-    [S_EXIT] = {S_EXIT, TOKEN_EXIT, {}, 0}, 
-    [S_EA] = {S_EA, TOKEN_NONE, {{'c', S_EAC}}, 1},
-    [S_EAC] = {S_EAC, TOKEN_NONE, {{'h', S_EACH}}, 1},
-    [S_EACH] = {S_EACH, TOKEN_EACH, {}, 0},
-
-    [S_F] = {S_F, TOKEN_NONE, {{'a', S_FA}}, 1},
-    [S_FA] = {S_FA, TOKEN_NONE, {{'l', S_FAL}}, 1},
-    [S_FAL] = {S_FAL, TOKEN_NONE, {{'s', S_FALS}}, 1},
-    [S_FALS] = {S_FALS, TOKEN_NONE, {{'e', S_FALSE}}, 1},
-    [S_FALSE] = {S_FALSE, TOKEN_FALSE, {}, 0},
-
-    [S_G] = {S_G, TOKEN_NONE, {{'r', S_GR}}, 1},
-    [S_GR] = {S_GR, TOKEN_NONE, {{'e', S_GRE}}, 1},
-    [S_GRE] = {S_GRE, TOKEN_NONE, {{'a', S_GREA}}, 1},
-    [S_GREA] = {S_GREA, TOKEN_NONE, {{'t', S_GREAT}}, 1},
-    [S_GREAT] = {S_GREAT, TOKEN_NONE, {{'e', S_GREATE}}, 1},
-    [S_GREATE] = {S_GREATE, TOKEN_NONE, {{'r', S_GREATER}}, 1},
-    [S_GREATER] = {S_GREATER, TOKEN_GREATER, {}, 0},
-
-    [S_I] = {S_I, TOKEN_NONE, {{'f', S_IF}}, 1},
-    [S_IF] = {S_IF, TOKEN_IF, {}, 0},
-
-    [S_L] = {S_L, TOKEN_NONE, {{'o', S_LO}, {'e', S_LE}}, 2},
-    [S_LO] = {S_LO, TOKEN_NONE, {{'o', S_LOO}}, 1},
-    [S_LOO] = {S_LOO, TOKEN_NONE, {{'p', S_LOOP}}, 1},
-    [S_LOOP] = {S_LOOP, TOKEN_LOOP, {}, 0}, 
-    [S_LE] = {S_LE, TOKEN_NONE, {{'t', S_LET}, {'s', S_LES}}, 2}, 
-    [S_LET] = {S_LET, TOKEN_NONE, {{'t', S_LETT}}, 1},
-    [S_LETT] = {S_LETT, TOKEN_NONE, {{'e', S_LETTE}}, 1},
-    [S_LETTE] = {S_LETTE, TOKEN_NONE, {{'r', S_LETTER}}, 1},
-    [S_LETTER] = {S_LETTER, TOKEN_LETTER, {}, 0},
-    [S_LES] = {S_LES, TOKEN_NONE, {{'s', S_LESS}}, 1},
-    [S_LESS] = {S_LESS, TOKEN_LESS, {}, 0},
-
-    [S_M] = {S_M, TOKEN_NONE, {{'a', S_MA}}, 1},
-    [S_MA] = {S_MA, TOKEN_NONE, {{'i', S_MAI}}, 1},
-    [S_MAI] = {S_MAI, TOKEN_NONE, {{'n', S_MAIN}}, 1},
-    [S_MAIN] = {S_MAIN, TOKEN_MAIN, {}, 0}, 
-
-    [S_N] = {S_N, TOKEN_NONE, {{'o', S_NO}, {'u', S_NU}}, 2},
-    [S_NO] = {S_NO, TOKEN_NONE, {{'t', S_NOT}}, 1},
-    [S_NOT] = {S_NOT, TOKEN_NOT, {}, 0},
-    [S_NU] = {S_NU, TOKEN_NONE, {{'m', S_NUM}}, 1},
-    [S_NUM] = {S_NUM, TOKEN_NONE, {{'b', S_NUMB}}, 1},
-    [S_NUMB] = {S_NUMB, TOKEN_NONE, {{'e', S_NUMBE}}, 1},
-    [S_NUMBE] = {S_NUMBE, TOKEN_NONE, {{'r', S_NUMBER}}, 1},
-    [S_NUMBER] = {S_NUMBER, TOKEN_NUMBER, {}, 0},
-
-    [S_O] = {S_O, TOKEN_NONE, {{'r', S_OR}, {'f', S_OF}}, 2},
-    [S_OR] = {S_OR, TOKEN_OR, {}, 0},
-    [S_OF] = {S_OF, TOKEN_OF, {}, 0},
-
-    [S_R] = {S_R, TOKEN_NONE, {{'e', S_RE}}, 1},
-    [S_RE] = {S_RE, TOKEN_NONE, {{'p', S_REP}}, 1},
-    [S_REP] = {S_REP, TOKEN_NONE, {{'e', S_REPE}}, 1},
-    [S_REPE] = {S_REPE, TOKEN_NONE, {{'a', S_REPEA}}, 1},
-    [S_REPEA] = {S_REPEA, TOKEN_NONE, {{'t', S_REPEAT}}, 1},
-    [S_REPEAT] = {S_REPEAT, TOKEN_REPEAT, {}, 0},
-
-    [S_S] = {S_S, TOKEN_NONE, {{'t', S_ST}, {'h', S_SH}}, 2},
-    [S_ST] = {S_ST, TOKEN_NONE, {{'a', S_STA}, {'o', S_STO}}, 2},
-    [S_STA] = {S_STA, TOKEN_NONE, {{'r', S_STAR}}, 1},
-    [S_STAR] = {S_STAR, TOKEN_NONE, {{'t', S_START_KW}}, 1},
-    [S_START_KW] = {S_START_KW, TOKEN_START, {}, 0},
-    [S_STO] = {S_STO, TOKEN_NONE, {{'p', S_STOP}}, 1},
-    [S_STOP] = {S_STOP, TOKEN_STOP, {}, 0},
-    [S_SH] = {S_SH, TOKEN_NONE, {{'o', S_SHO}}, 1},
-    [S_SHO] = {S_SHO, TOKEN_NONE, {{'w', S_SHOW}}, 1},
-    [S_SHOW] = {S_SHOW, TOKEN_SHOW, {}, 0},
-
-    [S_T] = {S_T, TOKEN_NONE, {{'r', S_TR}, {'o', S_TO}, {'h', S_TH}}, 3},
-    [S_TR] = {S_TR, TOKEN_NONE, {{'u', S_TRU}}, 1},
-    [S_TRU] = {S_TRU, TOKEN_NONE, {{'e', S_TRUE}}, 1},
-    [S_TRUE] = {S_TRUE, TOKEN_TRUE, {}, 0},
-    [S_TO] = {S_TO, TOKEN_TO, {}, 0},
-    [S_TH] = {S_TH, TOKEN_NONE, {{'a', S_THA}, {'e', S_THE}}, 2}, // Branch for 'than' ('a') & 'then' ('e')
-    [S_THA] = {S_THA, TOKEN_NONE, {{'n', S_THAN}}, 1},
-    [S_THAN] = {S_THAN, TOKEN_THAN, {}, 0},
-    [S_THE] = {S_THE, TOKEN_NONE, {{'n', S_THEN}}, 1},
-    [S_THEN] = {S_THEN, TOKEN_THEN, {}, 0},
-
-    [S_W] = {S_W, TOKEN_NONE, {{'h', S_WH}, {'o', S_WO}}, 2},
-    [S_WH] = {S_WH, TOKEN_NONE, {{'i', S_WHI}}, 1},
-    [S_WHI] = {S_WHI, TOKEN_NONE, {{'l', S_WHIL}}, 1},
-    [S_WHIL] = {S_WHIL, TOKEN_NONE, {{'e', S_WHILE}}, 1},
-    [S_WHILE] = {S_WHILE, TOKEN_WHILE, {}, 0},
-    [S_WO] = {S_WO, TOKEN_NONE, {{'r', S_WOR}}, 1},
-    [S_WOR] = {S_WOR, TOKEN_NONE, {{'d', S_WORD}}, 1},
-    [S_WORD] = {S_WORD, TOKEN_WORD, {}, 0},
-
-    [S_IDENTIFIER] = {S_IDENTIFIER, TOKEN_IDENTIFIER, {}, 0}
-};
 
 const StateNode MACHINE_DEF[NUM_STATES] = {
     [S_START] = {S_START, TOKEN_NONE, {
@@ -773,6 +633,7 @@ const char *token_type_to_string(Token type) {
         case TOKEN_EXIT:            return "TOKEN_EXIT";
         case TOKEN_LOOP:            return "TOKEN_LOOP";
         case TOKEN_MAIN:            return "TOKEN_MAIN";
+        case TOKEN_NONE:            return "TOKEN_NONE";
 
         default:
             return "TOKEN_UNKNOWN";
