@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DEFAULT_CHAR '\0'
+
 int lex(Lexer *lexer) {
     while (*lexer->cur_tok != '\0') {
       //  printf("Current char: '%c'\n", *lexer->cur_tok);
@@ -102,7 +104,7 @@ int lex(Lexer *lexer) {
                     lexer->cur_tok++; 
                     add_token(lexer, TOKEN_IS, "=="); 
                 } else {
-                    add_token(lexer, TOKEN_SET, "=");
+                    add_token(lexer, TOKEN_ASSIGN, "=");
                 }
                 lexer->cur_tok++;
                 break;
@@ -197,10 +199,6 @@ int lex(Lexer *lexer) {
                         }
                     continue; 
                 } else {
-                    fprintf(stderr, "Unknown token: %c\n", *(lexer->cur_tok-3));
-                    fprintf(stderr, "Unknown token: %c\n", *(lexer->cur_tok-2));                    
-                    fprintf(stderr, "Unknown token: %c\n", *(lexer->cur_tok-1));
-                    fprintf(stderr, "Unknown token: %c\n", *lexer->cur_tok);
                     fprintf(stderr, "Unknown token at line %zu, col %zu: '%c' (ASCII: %d)\n", 
                             lexer->line_number, 
                             lexer->cur_tok - lexer->line_start,
@@ -323,40 +321,43 @@ Token handle_keyword(const char *input_word, size_t word_length) {
     
     State current_state = S_START;
     const StateNode* current_node = get_node(S_START);
-    
+
     for (size_t i = 0; i < word_length; i++) {
         char c = input_word[i];
 
         if (c < 'a' || c > 'z') {
-            current_state = S_IDENTIFIER;
-            current_node = get_node(S_IDENTIFIER);
+            return TOKEN_IDENTIFIER; 
+        }
+
+        if (current_state == S_IDENT) {
             continue; 
         }
 
-        State next_state = S_IDENTIFIER; 
-        bool transition_found = false;
+        State next_state = S_IDENT; // Initialize
 
         for (int j = 0; j < current_node->num_transitions; j++) {
-            if (current_node->transitions[j].input_char == c) {
+            char transition_char = current_node->transitions[j].input_char;
+
+            // Check for specific character match
+            if (transition_char == c) {
                 next_state = current_node->transitions[j].next_state;
-                transition_found = true;
                 break;
             }
-        }
 
-         if (!transition_found || current_state == S_IDENTIFIER) {
-            current_state = S_IDENTIFIER;
-        } else {
-            current_state = next_state;
+
+            if (transition_char == DEFAULT_CHAR) {
+                next_state = current_node->transitions[j].next_state;
+            }
         }
-        
+        // Move to the next state
+        current_state = next_state; 
         current_node = get_node(current_state);
     }
 
+    // Final check for an accepting state
     if (current_node->output != TOKEN_NONE) {
         return current_node->output;
     }
-
     return TOKEN_IDENTIFIER;
 }
 
@@ -412,138 +413,162 @@ const StateNode MACHINE_DEF[NUM_STATES] = {
     [S_START] = {S_START, TOKEN_NONE, {
         {'a', S_A}, {'o', S_O}, {'n', S_N}, {'s', S_S}, {'e', S_E}, 
         {'c', S_C}, {'i', S_I}, {'w', S_W}, {'l', S_L}, {'m', S_M},
-        {'t', S_T}, {'f', S_F}, {'b', S_B}, {'d', S_D}, {'g', S_G},
-        {'r', S_R}
-    }, 16},
+        {'t', S_T}, {'f', S_F}, {'r', S_R}, {'d', S_D}, {'g', S_G},
+        {DEFAULT_CHAR, S_IDENT} // Explicit Default Transition
+    }, 17}, 
 
-    [S_A] = {S_A, TOKEN_NONE, {{'n', S_AN}, {'s', S_AS}, {'l', S_AL}}, 3},
-    [S_AN] = {S_AN, TOKEN_NONE, {{'d', S_AND}}, 1},
-    [S_AND] = {S_AND, TOKEN_AND, {{0}}, 0},
-    [S_AS] = {S_AS, TOKEN_NONE, {{'k', S_ASK}}, 1},
-    [S_ASK] = {S_ASK, TOKEN_ASK, {{0}}, 0},
-    [S_AL] = {S_AL, TOKEN_NONE, {{'s', S_ALS}}, 1},
-    [S_ALS] = {S_ALS, TOKEN_NONE, {{'o', S_ALSO}}, 1},
-    [S_ALSO] = {S_ALSO, TOKEN_ALSO, {{0}}, 0},
+    // Intermediate States (Default transitions now point to S_IDENT)
+    [S_A] = {S_A, TOKEN_NONE, {{'n', S_AN}, {'s', S_AS}, {'l', S_AL}, {DEFAULT_CHAR, S_IDENT}}, 4},
+    [S_AN] = {S_AN, TOKEN_NONE, {{'d', S_AND}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    
+    // Final States (Transitions point to S_IDENT for trailing chars)
+    [S_AND] = {S_AND, TOKEN_AND, {{DEFAULT_CHAR, S_IDENT}}, 1}, 
+    
+    [S_AS] = {S_AS, TOKEN_NONE, {{'k', S_ASK}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_ASK] = {S_ASK, TOKEN_ASK, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_AL] = {S_AL, TOKEN_NONE, {{'s', S_ALS}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_ALS] = {S_ALS, TOKEN_NONE, {{'o', S_ALSO}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_ALSO] = {S_ALSO, TOKEN_ALSO, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_B] = {S_B, TOKEN_NONE, {{'y', S_BY}}, 1},
-    [S_BY] = {S_BY, TOKEN_BY, {{0}}, 0},
+    [S_C] = {S_C, TOKEN_NONE, {{'o', S_CO}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_CO] = {S_CO, TOKEN_NONE, {{'n', S_CON}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_CON] = {S_CON, TOKEN_NONE, {{'t', S_CONT}, {'s', S_CONS}, {DEFAULT_CHAR, S_IDENT}}, 3},
+    [S_CONS] = {S_CONS, TOKEN_NONE, {{'t', S_CONST}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_CONST] = {S_CONST, TOKEN_CONST, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_CONT] = {S_CONT, TOKEN_NONE, {{'i', S_CONTI}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_CONTI] = {S_CONTI, TOKEN_NONE, {{'n', S_CONTIN}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_CONTIN] = {S_CONTIN, TOKEN_NONE, {{'u', S_CONTINU}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_CONTINU] = {S_CONTINU, TOKEN_NONE, {{'e', S_CONTINUE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_CONTINUE] = {S_CONTINUE, TOKEN_CONTINUE, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_C] = {S_C, TOKEN_NONE, {{'o', S_CO}}, 1},
-    [S_CO] = {S_CO, TOKEN_NONE, {{'n', S_CON}}, 1},
-    [S_CON] = {S_CON, TOKEN_NONE, {{'t', S_CONT}}, 1},
-    [S_CONT] = {S_CONT, TOKEN_NONE, {{'i', S_CONTI}}, 1},
-    [S_CONTI] = {S_CONTI, TOKEN_NONE, {{'n', S_CONTIN}}, 1},
-    [S_CONTIN] = {S_CONTIN, TOKEN_NONE, {{'u', S_CONTINU}}, 1},
-    [S_CONTINU] = {S_CONTINU, TOKEN_NONE, {{'e', S_CONTINUE}}, 1},
-    [S_CONTINUE] = {S_CONTINUE, TOKEN_CONTINUE, {{0}}, 0},
+    [S_D] = {S_D, TOKEN_NONE, {{'e', S_DE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_DE] = {S_DE, TOKEN_NONE, {{'c', S_DEC}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_DEC] = {S_DEC, TOKEN_NONE, {{'i', S_DECI}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_DECI] = {S_DECI, TOKEN_NONE, {{'m', S_DECIM}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_DECIM] = {S_DECIM, TOKEN_NONE, {{'a', S_DECIMA}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_DECIMA] = {S_DECIMA, TOKEN_NONE, {{'l', S_DECIMAL}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_DECIMAL] = {S_DECIMAL, TOKEN_DECIMAL, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_D] = {S_D, TOKEN_NONE, {{'e', S_DE}}, 1},
-    [S_DE] = {S_DE, TOKEN_NONE, {{'c', S_DEC}}, 1},
-    [S_DEC] = {S_DEC, TOKEN_NONE, {{'i', S_DECI}}, 1},
-    [S_DECI] = {S_DECI, TOKEN_NONE, {{'m', S_DECIM}}, 1},
-    [S_DECIM] = {S_DECIM, TOKEN_NONE, {{'a', S_DECIMA}}, 1},
-    [S_DECIMA] = {S_DECIMA, TOKEN_NONE, {{'l', S_DECIMAL}}, 1},
-    [S_DECIMAL] = {S_DECIMAL, TOKEN_DECIMAL, {{0}}, 0},
+    [S_E] = {S_E, TOKEN_NONE, {{'n', S_EN}, {'l', S_EL}, {'x', S_EX}, {'a', S_EA}, {DEFAULT_CHAR, S_IDENT}}, 5},
+    [S_EN] = {S_EN, TOKEN_NONE, {{'d', S_END}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_END] = {S_END, TOKEN_END, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_EL] = {S_EL, TOKEN_NONE, {{'s', S_ELS}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_ELS] = {S_ELS, TOKEN_NONE, {{'e', S_ELSE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_ELSE] = {S_ELSE, TOKEN_ELSE, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_EX] = {S_EX, TOKEN_NONE, {{'i', S_EXI}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_EXI] = {S_EXI, TOKEN_NONE, {{'t', S_EXIT}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_EXIT] = {S_EXIT, TOKEN_EXIT, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_EA] = {S_EA, TOKEN_NONE, {{'c', S_EAC}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_EAC] = {S_EAC, TOKEN_NONE, {{'h', S_EACH}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_EACH] = {S_EACH, TOKEN_EACH, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_E] = {S_E, TOKEN_NONE, {{'n', S_EN}, {'l', S_EL}, {'x', S_EX}, {'a', S_EA}}, 4},
-    [S_EN] = {S_EN, TOKEN_NONE, {{'d', S_END}}, 1},
-    [S_END] = {S_END, TOKEN_END, {{0}}, 0},
-    [S_EL] = {S_EL, TOKEN_NONE, {{'s', S_ELS}}, 1},
-    [S_ELS] = {S_ELS, TOKEN_NONE, {{'e', S_ELSE}}, 1},
-    [S_ELSE] = {S_ELSE, TOKEN_ELSE, {{0}}, 0},
-    [S_EX] = {S_EX, TOKEN_NONE, {{'i', S_EXI}}, 1},
-    [S_EXI] = {S_EXI, TOKEN_NONE, {{'t', S_EXIT}}, 1},
-    [S_EXIT] = {S_EXIT, TOKEN_EXIT, {{0}}, 0},
-    [S_EA] = {S_EA, TOKEN_NONE, {{'c', S_EAC}}, 1},
-    [S_EAC] = {S_EAC, TOKEN_NONE, {{'h', S_EACH}}, 1},
-    [S_EACH] = {S_EACH, TOKEN_EACH, {{0}}, 0},
+    [S_F] = {S_F, TOKEN_NONE, {{'a', S_FA}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_FA] = {S_FA, TOKEN_NONE, {{'l', S_FAL}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_FAL] = {S_FAL, TOKEN_NONE, {{'s', S_FALS}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_FALS] = {S_FALS, TOKEN_NONE, {{'e', S_FALSE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_FALSE] = {S_FALSE, TOKEN_FALSE, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_F] = {S_F, TOKEN_NONE, {{'a', S_FA}}, 1},
-    [S_FA] = {S_FA, TOKEN_NONE, {{'l', S_FAL}}, 1},
-    [S_FAL] = {S_FAL, TOKEN_NONE, {{'s', S_FALS}}, 1},
-    [S_FALS] = {S_FALS, TOKEN_NONE, {{'e', S_FALSE}}, 1},
-    [S_FALSE] = {S_FALSE, TOKEN_FALSE, {{0}}, 0},
+    [S_G] = {S_G, TOKEN_NONE, {{'r', S_GR}, {'o', S_GO}, {DEFAULT_CHAR, S_IDENT}}, 3},
+    [S_GO] = {S_GO, TOKEN_NONE, {{'t', S_GOT}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_GOT] = {S_GOT, TOKEN_NONE, {{'o', S_GOTO}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_GOTO] = {S_GOTO, TOKEN_GOTO, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_GR] = {S_GR, TOKEN_NONE, {{'e', S_GRE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_GRE] = {S_GRE, TOKEN_NONE, {{'a', S_GREA}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_GREA] = {S_GREA, TOKEN_NONE, {{'t', S_GREAT}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_GREAT] = {S_GREAT, TOKEN_NONE, {{'e', S_GREATE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_GREATE] = {S_GREATE, TOKEN_NONE, {{'r', S_GREATER}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_GREATER] = {S_GREATER, TOKEN_GREATER, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_G] = {S_G, TOKEN_NONE, {{'r', S_GR}}, 1},
-    [S_GR] = {S_GR, TOKEN_NONE, {{'e', S_GRE}}, 1},
-    [S_GRE] = {S_GRE, TOKEN_NONE, {{'a', S_GREA}}, 1},
-    [S_GREA] = {S_GREA, TOKEN_NONE, {{'t', S_GREAT}}, 1},
-    [S_GREAT] = {S_GREAT, TOKEN_NONE, {{'e', S_GREATE}}, 1},
-    [S_GREATE] = {S_GREATE, TOKEN_NONE, {{'r', S_GREATER}}, 1},
-    [S_GREATER] = {S_GREATER, TOKEN_GREATER, {{0}}, 0},
+    [S_I] = {S_I, TOKEN_NONE, {{'f', S_IF}, {'m', S_IM}, {DEFAULT_CHAR, S_IDENT}}, 3},
+    [S_IF] = {S_IF, TOKEN_IF, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_IM] = {S_IM, TOKEN_NONE, {{'p', S_IMP}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_IMP] = {S_IMP, TOKEN_NONE, {{'o', S_IMPO}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_IMPO] = {S_IMPO, TOKEN_NONE, {{'r', S_IMPOR}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_IMPOR] = {S_IMPOR, TOKEN_NONE, {{'t', S_IMPORT}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_IMPORT] = {S_IMPORT, TOKEN_IMPORT, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_I] = {S_I, TOKEN_NONE, {{'f', S_IF}}, 1},
-    [S_IF] = {S_IF, TOKEN_IF, {{0}}, 0},
+    [S_L] = {S_L, TOKEN_NONE, {{'o', S_LO}, {'e', S_LE}, {DEFAULT_CHAR, S_IDENT}}, 3},
+    [S_LO] = {S_LO, TOKEN_NONE, {{'o', S_LOO}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_LOO] = {S_LOO, TOKEN_NONE, {{'p', S_LOOP}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_LOOP] = {S_LOOP, TOKEN_LOOP, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_LE] = {S_LE, TOKEN_NONE, {{'t', S_LET}, {'s', S_LES}, {DEFAULT_CHAR, S_IDENT}}, 3},
+    [S_LET] = {S_LET, TOKEN_NONE, {{'t', S_LETT}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_LETT] = {S_LETT, TOKEN_NONE, {{'e', S_LETTE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_LETTE] = {S_LETTE, TOKEN_NONE, {{'r', S_LETTER}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_LETTER] = {S_LETTER, TOKEN_LETTER, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_LES] = {S_LES, TOKEN_NONE, {{'s', S_LESS}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_LESS] = {S_LESS, TOKEN_LESS, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_L] = {S_L, TOKEN_NONE, {{'o', S_LO}, {'e', S_LE}}, 2},
-    [S_LO] = {S_LO, TOKEN_NONE, {{'o', S_LOO}}, 1},
-    [S_LOO] = {S_LOO, TOKEN_NONE, {{'p', S_LOOP}}, 1},
-    [S_LOOP] = {S_LOOP, TOKEN_LOOP, {{0}}, 0},
-    [S_LE] = {S_LE, TOKEN_NONE, {{'t', S_LET}, {'s', S_LES}}, 2},
-    [S_LET] = {S_LET, TOKEN_NONE, {{'t', S_LETT}}, 1},
-    [S_LETT] = {S_LETT, TOKEN_NONE, {{'e', S_LETTE}}, 1},
-    [S_LETTE] = {S_LETTE, TOKEN_NONE, {{'r', S_LETTER}}, 1},
-    [S_LETTER] = {S_LETTER, TOKEN_LETTER, {{0}}, 0},
-    [S_LES] = {S_LES, TOKEN_NONE, {{'s', S_LESS}}, 1},
-    [S_LESS] = {S_LESS, TOKEN_LESS, {{0}}, 0},
+    [S_M] = {S_M, TOKEN_NONE, {{'a', S_MA}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_MA] = {S_MA, TOKEN_NONE, {{'i', S_MAI}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_MAI] = {S_MAI, TOKEN_NONE, {{'n', S_MAIN}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_MAIN] = {S_MAIN, TOKEN_MAIN, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_M] = {S_M, TOKEN_NONE, {{'a', S_MA}}, 1},
-    [S_MA] = {S_MA, TOKEN_NONE, {{'i', S_MAI}}, 1},
-    [S_MAI] = {S_MAI, TOKEN_NONE, {{'n', S_MAIN}}, 1},
-    [S_MAIN] = {S_MAIN, TOKEN_MAIN, {{0}}, 0},
+    [S_N] = {S_N, TOKEN_NONE, {{'o', S_NO}, {'u', S_NU}, {DEFAULT_CHAR, S_IDENT}}, 3},
+    [S_NO] = {S_NO, TOKEN_NONE, {{'t', S_NOT}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_NOT] = {S_NOT, TOKEN_NOT, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_NU] = {S_NU, TOKEN_NONE, {{'m', S_NUM}, {'l', S_NUL}, {DEFAULT_CHAR, S_IDENT}}, 3},
+    [S_NUL] = {S_NUL, TOKEN_NONE, {{'l', S_NULL}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_NULL] = {S_NULL, TOKEN_NULL, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_NUM] = {S_NUM, TOKEN_NONE, {{'b', S_NUMB}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_NUMB] = {S_NUMB, TOKEN_NONE, {{'e', S_NUMBE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_NUMBE] = {S_NUMBE, TOKEN_NONE, {{'r', S_NUMBER}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_NUMBER] = {S_NUMBER, TOKEN_NUMBER, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_N] = {S_N, TOKEN_NONE, {{'o', S_NO}, {'u', S_NU}}, 2},
-    [S_NO] = {S_NO, TOKEN_NONE, {{'t', S_NOT}}, 1},
-    [S_NOT] = {S_NOT, TOKEN_NOT, {{0}}, 0},
-    [S_NU] = {S_NU, TOKEN_NONE, {{'m', S_NUM}}, 1},
-    [S_NUM] = {S_NUM, TOKEN_NONE, {{'b', S_NUMB}}, 1},
-    [S_NUMB] = {S_NUMB, TOKEN_NONE, {{'e', S_NUMBE}}, 1},
-    [S_NUMBE] = {S_NUMBE, TOKEN_NONE, {{'r', S_NUMBER}}, 1},
-    [S_NUMBER] = {S_NUMBER, TOKEN_NUMBER, {{0}}, 0},
+    [S_O] = {S_O, TOKEN_NONE, {{'r', S_OR}, {'f', S_OF}, {DEFAULT_CHAR, S_IDENT}}, 3},
+    [S_OR] = {S_OR, TOKEN_OR, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_OF] = {S_OF, TOKEN_OF, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_O] = {S_O, TOKEN_NONE, {{'r', S_OR}, {'f', S_OF}}, 2},
-    [S_OR] = {S_OR, TOKEN_OR, {{0}}, 0},
-    [S_OF] = {S_OF, TOKEN_OF, {{0}}, 0},
+    [S_R] = {S_R, TOKEN_NONE, {{'e', S_RE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_RE] = {S_RE, TOKEN_NONE, {{'p', S_REP}, {'t', S_RET}, {DEFAULT_CHAR, S_IDENT}}, 3},
+    [S_REP] = {S_REP, TOKEN_NONE, {{'e', S_REPE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_REPE] = {S_REPE, TOKEN_NONE, {{'a', S_REPEA}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_REPEA] = {S_REPEA, TOKEN_NONE, {{'t', S_REPEAT}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_REPEAT] = {S_REPEAT, TOKEN_REPEAT, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_RET] = {S_RET, TOKEN_NONE, {{'u', S_RETU}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_RETU] = {S_RETU, TOKEN_NONE, {{'r', S_RETUR}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_RETUR] = {S_RETUR, TOKEN_NONE, {{'n', S_RETURN}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_RETURN] = {S_RETURN, TOKEN_RETURN, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_R] = {S_R, TOKEN_NONE, {{'e', S_RE}}, 1},
-    [S_RE] = {S_RE, TOKEN_NONE, {{'p', S_REP}}, 1},
-    [S_REP] = {S_REP, TOKEN_NONE, {{'e', S_REPE}}, 1},
-    [S_REPE] = {S_REPE, TOKEN_NONE, {{'a', S_REPEA}}, 1},
-    [S_REPEA] = {S_REPEA, TOKEN_NONE, {{'t', S_REPEAT}}, 1},
-    [S_REPEAT] = {S_REPEAT, TOKEN_REPEAT, {{0}}, 0},
+    [S_S] = {S_S, TOKEN_NONE, {{'t', S_ST}, {'h', S_SH}, {'i', S_SI}, {DEFAULT_CHAR, S_IDENT}}, 4},
+    [S_SI] = {S_SI, TOKEN_NONE, {{'z', S_SIZ}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_SIZ] = {S_SIZ, TOKEN_NONE, {{'e', S_SIZE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_SIZE] = {S_SIZE, TOKEN_NONE, {{'o', S_SIZEO}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_SIZEO] = {S_SIZEO, TOKEN_NONE, {{'f', S_SIZEOF}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_SIZEOF] = {S_SIZEOF, TOKEN_SIZEOF, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_ST] = {S_ST, TOKEN_NONE, {{'a', S_STA}, {'o', S_STO}, {DEFAULT_CHAR, S_IDENT}}, 3},
+    [S_STA] = {S_STA, TOKEN_NONE, {{'r', S_STAR}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_STAR] = {S_STAR, TOKEN_NONE, {{'t', S_START_KW}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_START_KW] = {S_START_KW, TOKEN_START, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_STO] = {S_STO, TOKEN_NONE, {{'p', S_STOP}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_STOP] = {S_STOP, TOKEN_STOP, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_SH] = {S_SH, TOKEN_NONE, {{'o', S_SHO}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_SHO] = {S_SHO, TOKEN_NONE, {{'w', S_SHOW}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_SHOW] = {S_SHOW, TOKEN_SHOW, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_S] = {S_S, TOKEN_NONE, {{'t', S_ST}, {'h', S_SH}}, 2},
-    [S_ST] = {S_ST, TOKEN_NONE, {{'a', S_STA}, {'o', S_STO}}, 2},
-    [S_STA] = {S_STA, TOKEN_NONE, {{'r', S_STAR}}, 1},
-    [S_STAR] = {S_STAR, TOKEN_NONE, {{'t', S_START_KW}}, 1},
-    [S_START_KW] = {S_START_KW, TOKEN_START, {{0}}, 0},
-    [S_STO] = {S_STO, TOKEN_NONE, {{'p', S_STOP}}, 1},
-    [S_STOP] = {S_STOP, TOKEN_STOP, {{0}}, 0},
-    [S_SH] = {S_SH, TOKEN_NONE, {{'o', S_SHO}}, 1},
-    [S_SHO] = {S_SHO, TOKEN_NONE, {{'w', S_SHOW}}, 1},
-    [S_SHOW] = {S_SHOW, TOKEN_SHOW, {{0}}, 0},
+    [S_T] = {S_T, TOKEN_NONE, {{'r', S_TR}, {'h', S_TH}, {DEFAULT_CHAR, S_IDENT}}, 4},
+    [S_TR] = {S_TR, TOKEN_NONE, {{'u', S_TRU}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_TRU] = {S_TRU, TOKEN_NONE, {{'e', S_TRUE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_TRUE] = {S_TRUE, TOKEN_TRUE, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_TH] = {S_TH, TOKEN_NONE, {{'a', S_THA}, {'e', S_THE}, {DEFAULT_CHAR, S_IDENT}}, 3},
+    [S_THA] = {S_THA, TOKEN_NONE, {{'n', S_THAN}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_THAN] = {S_THAN, TOKEN_THAN, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_THE] = {S_THE, TOKEN_NONE, {{'n', S_THEN}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_THEN] = {S_THEN, TOKEN_THEN, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_T] = {S_T, TOKEN_NONE, {{'r', S_TR}, {'o', S_TO}, {'h', S_TH}}, 3},
-    [S_TR] = {S_TR, TOKEN_NONE, {{'u', S_TRU}}, 1},
-    [S_TRU] = {S_TRU, TOKEN_NONE, {{'e', S_TRUE}}, 1},
-    [S_TRUE] = {S_TRUE, TOKEN_TRUE, {{0}}, 0},
-    [S_TO] = {S_TO, TOKEN_TO, {{0}}, 0},
-    [S_TH] = {S_TH, TOKEN_NONE, {{'a', S_THA}, {'e', S_THE}}, 2},
-    [S_THA] = {S_THA, TOKEN_NONE, {{'n', S_THAN}}, 1},
-    [S_THAN] = {S_THAN, TOKEN_THAN, {{0}}, 0},
-    [S_THE] = {S_THE, TOKEN_NONE, {{'n', S_THEN}}, 1},
-    [S_THEN] = {S_THEN, TOKEN_THEN, {{0}}, 0},
+    [S_W] = {S_W, TOKEN_NONE, {{'h', S_WH}, {'o', S_WO}, {DEFAULT_CHAR, S_IDENT}}, 3},
+    [S_WH] = {S_WH, TOKEN_NONE, {{'i', S_WHI}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_WHI] = {S_WHI, TOKEN_NONE, {{'l', S_WHIL}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_WHIL] = {S_WHIL, TOKEN_NONE, {{'e', S_WHILE}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_WHILE] = {S_WHILE, TOKEN_WHILE, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_WO] = {S_WO, TOKEN_NONE, {{'r', S_WOR}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_WOR] = {S_WOR, TOKEN_NONE, {{'d', S_WORD}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_WORD] = {S_WORD, TOKEN_WORD, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
-    [S_W] = {S_W, TOKEN_NONE, {{'h', S_WH}, {'o', S_WO}}, 2},
-    [S_WH] = {S_WH, TOKEN_NONE, {{'i', S_WHI}}, 1},
-    [S_WHI] = {S_WHI, TOKEN_NONE, {{'l', S_WHIL}}, 1},
-    [S_WHIL] = {S_WHIL, TOKEN_NONE, {{'e', S_WHILE}}, 1},
-    [S_WHILE] = {S_WHILE, TOKEN_WHILE, {{0}}, 0},
-    [S_WO] = {S_WO, TOKEN_NONE, {{'r', S_WOR}}, 1},
-    [S_WOR] = {S_WOR, TOKEN_NONE, {{'d', S_WORD}}, 1},
-    [S_WORD] = {S_WORD, TOKEN_WORD, {{0}}, 0},
-
-    [S_IDENTIFIER] = {S_IDENTIFIER, TOKEN_IDENTIFIER, {{0}}, 0}
+    // The Dead State definition
+    [S_IDENT] = {S_IDENT, TOKEN_NONE, {
+        {DEFAULT_CHAR, S_IDENT} 
+    }, 1}
 };
 
 const StateNode* get_node(State s) {
@@ -556,7 +581,6 @@ const StateNode* get_node(State s) {
 
 const char *token_type_to_string(Token type) {
     switch (type) {
-        case TOKEN_EOF:             return "TOKEN_EOF";
         case TOKEN_IDENTIFIER:      return "TOKEN_IDENTIFIER";
         case TOKEN_NUMBER:          return "TOKEN_NUMBER";
         case TOKEN_DECIMAL:         return "TOKEN_DECIMAL";
@@ -566,9 +590,13 @@ const char *token_type_to_string(Token type) {
         case TOKEN_FALSE:           return "TOKEN_FALSE";
         case TOKEN_SEMICOLON:       return "TOKEN_SEMICOLON";
         case TOKEN_COMMA:           return "TOKEN_COMMA";
+        case TOKEN_CONST:           return "TOKEN_CONST";
+        case TOKEN_NULL:            return "TOKEN_NULL";
+        case TOKEN_SIZEOF:          return "TOKEN_SIZEOF";
+        case TOKEN_RETURN:          return "TOKEN_RETURN";
      
         case TOKEN_STRING_LITERAL:  return "TOKEN_STRING_LITERAL";
-//      case TOKEN_ASSIGN:          return "TOKEN_ASSIGN";
+        case TOKEN_CHAR_LITERAL:    return "TOKEN_CHAR_LITERAL";
         case TOKEN_COLON:           return "TOKEN_COLON";
         case TOKEN_DOT:             return "TOKEN_DOT";
       
@@ -588,10 +616,8 @@ const char *token_type_to_string(Token type) {
         case TOKEN_WHILE:           return "TOKEN_WHILE";
 
         case TOKEN_ASK:             return "TOKEN_ASK";
-        case TOKEN_BY:              return "TOKEN_BY";
         case TOKEN_REPEAT:          return "TOKEN_REPEAT";
         case TOKEN_SHOW:            return "TOKEN_SHOW";
-        case TOKEN_TO:              return "TOKEN_TO";
         
         case TOKEN_THAN:            return "TOKEN_THAN";
         case TOKEN_EACH:            return "TOKEN_EACH";
@@ -599,7 +625,7 @@ const char *token_type_to_string(Token type) {
         case TOKEN_THEN:            return "TOKEN_THEN";
         case TOKEN_ALSO:            return "TOKEN_ALSO";
 
-        case TOKEN_SET:             return "TOKEN_SET";
+        case TOKEN_ASSIGN:          return "TOKEN_ASSIGN";
         case TOKEN_INCREASE:        return "TOKEN_INCREASE";
         case TOKEN_DECREASE:        return "TOKEN_DECREASE";
         case TOKEN_SCALE:           return "TOKEN_SCALE";
@@ -630,11 +656,14 @@ const char *token_type_to_string(Token type) {
         case TOKEN_OR:              return "TOKEN_OR";
         case TOKEN_NOT:             return "TOKEN_NOT";
         
+        case TOKEN_IMPORT:          return "TOKEN_IMPORT";
+        case TOKEN_GOTO:            return "TOKEN_GOTO";
         case TOKEN_EXIT:            return "TOKEN_EXIT";
         case TOKEN_LOOP:            return "TOKEN_LOOP";
         case TOKEN_MAIN:            return "TOKEN_MAIN";
         case TOKEN_NONE:            return "TOKEN_NONE";
-
+        case TOKEN_EOF:             return "TOKEN_EOF";
+        
         default:
             return "TOKEN_UNKNOWN";
     }

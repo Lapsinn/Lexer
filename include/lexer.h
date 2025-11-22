@@ -5,7 +5,6 @@
 
 typedef enum {
     TOKEN_NONE = 0,
-    TOKEN_EOF,          // End-of-File
     TOKEN_IDENTIFIER,  
     TOKEN_NUMBER,
     TOKEN_DECIMAL,
@@ -20,6 +19,10 @@ typedef enum {
     TOKEN_COLON,
     TOKEN_DOT,
     TOKEN_ASSIGN,
+    TOKEN_CONST,
+    TOKEN_NULL,
+    TOKEN_SIZEOF,
+    TOKEN_RETURN,
 
     TOKEN_LPAREN, TOKEN_RPAREN,         
     TOKEN_LBRACE, TOKEN_RBRACE,         
@@ -64,9 +67,12 @@ typedef enum {
     TOKEN_ALSO,
     
     //Reserved Words
+    TOKEN_IMPORT,
+    TOKEN_GOTO,
     TOKEN_EXIT,
     TOKEN_LOOP,
-    TOKEN_MAIN
+    TOKEN_MAIN,
+    TOKEN_EOF
 } Token;
 
 typedef struct {
@@ -107,16 +113,21 @@ typedef enum {
 
     S_N, S_NO, S_NOT,
     S_NU, S_NUM, S_NUMB, S_NUMBE, S_NUMBER,
+    S_NUL, S_NULL, // NEW: 'null' states
 
     S_S, S_ST, S_STA, S_STAR, S_START_KW, S_STO, S_STOP,
     S_SH, S_SHO, S_SHOW,
+    S_SI, S_SIZ, S_SIZE, S_SIZEO, S_SIZEOF, // NEW: 'sizeof' states
 
     S_E, S_EN, S_END, S_EL, S_ELS, S_ELSE, S_EX, S_EXI, S_EXIT,
     S_EA, S_EAC, S_EACH,
 
-    S_C, S_CO, S_CON, S_CONT, S_CONTI, S_CONTIN, S_CONTINU, S_CONTINUE,
+    S_C, S_CO, S_CON, 
+    S_CONS, S_CONST, // NEW: 'const' states
+    S_CONT, S_CONTI, S_CONTIN, S_CONTINU, S_CONTINUE,
 
     S_I, S_IF, 
+    S_IM, S_IMP, S_IMPO, S_IMPOR, S_IMPORT, // NEW: 'import' states
     
     S_W, S_WH, S_WHI, S_WHIL, S_WHILE,
     S_WO, S_WOR, S_WORD,
@@ -128,24 +139,24 @@ typedef enum {
     S_M, S_MA, S_MAI, S_MAIN,
 
     S_T, S_TR, S_TRU, S_TRUE,
-    S_TO,
     S_TH, S_THA, S_THAN, S_THE, S_THEN,
 
     S_F, S_FA, S_FAL, S_FALS, S_FALSE,
 
-    S_B, S_BY,
-
     S_D, S_DE, S_DEC, S_DECI, S_DECIM, S_DECIMA, S_DECIMAL,
 
     S_G, S_GR, S_GRE, S_GREA, S_GREAT, S_GREATE, S_GREATER,
+    S_GO, S_GOT, S_GOTO, // NEW: 'goto' states
 
     S_R, S_RE, S_REP, S_REPE, S_REPEA, S_REPEAT,
+    S_RET, S_RETU, S_RETUR, S_RETURN, // NEW: 'return' states
 
-    S_IDENTIFIER, 
+    S_IDENT, 
     NUM_STATES
 } State;
 
 #define MAX_TRANSITIONS 26 
+
 
 // FSM Data Structures
 typedef struct {
