@@ -113,21 +113,21 @@ typedef enum {
 
     S_N, S_NO, S_NOT,
     S_NU, S_NUM, S_NUMB, S_NUMBE, S_NUMBER,
-    S_NUL, S_NULL, // NEW: 'null' states
+    S_NUL, S_NULL,
 
     S_S, S_ST, S_STA, S_STAR, S_START_KW, S_STO, S_STOP,
     S_SH, S_SHO, S_SHOW,
-    S_SI, S_SIZ, S_SIZE, S_SIZEO, S_SIZEOF, // NEW: 'sizeof' states
+    S_SI, S_SIZ, S_SIZE, S_SIZEO, S_SIZEOF, 
 
     S_E, S_EN, S_END, S_EL, S_ELS, S_ELSE, S_EX, S_EXI, S_EXIT,
     S_EA, S_EAC, S_EACH,
 
     S_C, S_CO, S_CON, 
-    S_CONS, S_CONST, // NEW: 'const' states
+    S_CONS, S_CONST, 
     S_CONT, S_CONTI, S_CONTIN, S_CONTINU, S_CONTINUE,
 
     S_I, S_IF, 
-    S_IM, S_IMP, S_IMPO, S_IMPOR, S_IMPORT, // NEW: 'import' states
+    S_IM, S_IMP, S_IMPO, S_IMPOR, S_IMPORT, 
     
     S_W, S_WH, S_WHI, S_WHIL, S_WHILE,
     S_WO, S_WOR, S_WORD,
@@ -139,17 +139,17 @@ typedef enum {
     S_M, S_MA, S_MAI, S_MAIN,
 
     S_T, S_TR, S_TRU, S_TRUE,
-    S_TH, S_THA, S_THAN, S_THE, S_THEN,
+    S_TH, S_THE, S_THEN,
 
     S_F, S_FA, S_FAL, S_FALS, S_FALSE,
 
     S_D, S_DE, S_DEC, S_DECI, S_DECIM, S_DECIMA, S_DECIMAL,
 
     S_G, S_GR, S_GRE, S_GREA, S_GREAT, S_GREATE, S_GREATER,
-    S_GO, S_GOT, S_GOTO, // NEW: 'goto' states
+    S_GO, S_GOT, S_GOTO, 
 
     S_R, S_RE, S_REP, S_REPE, S_REPEA, S_REPEAT,
-    S_RET, S_RETU, S_RETUR, S_RETURN, // NEW: 'return' states
+    S_RET, S_RETU, S_RETUR, S_RETURN, 
 
     S_IDENT, 
     NUM_STATES

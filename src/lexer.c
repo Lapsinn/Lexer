@@ -550,9 +550,7 @@ const StateNode MACHINE_DEF[NUM_STATES] = {
     [S_TR] = {S_TR, TOKEN_NONE, {{'u', S_TRU}, {DEFAULT_CHAR, S_IDENT}}, 2},
     [S_TRU] = {S_TRU, TOKEN_NONE, {{'e', S_TRUE}, {DEFAULT_CHAR, S_IDENT}}, 2},
     [S_TRUE] = {S_TRUE, TOKEN_TRUE, {{DEFAULT_CHAR, S_IDENT}}, 1},
-    [S_TH] = {S_TH, TOKEN_NONE, {{'a', S_THA}, {'e', S_THE}, {DEFAULT_CHAR, S_IDENT}}, 3},
-    [S_THA] = {S_THA, TOKEN_NONE, {{'n', S_THAN}, {DEFAULT_CHAR, S_IDENT}}, 2},
-    [S_THAN] = {S_THAN, TOKEN_THAN, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_TH] = {S_TH, TOKEN_NONE, {{'e', S_THE}, {DEFAULT_CHAR, S_IDENT}}, 3},
     [S_THE] = {S_THE, TOKEN_NONE, {{'n', S_THEN}, {DEFAULT_CHAR, S_IDENT}}, 2},
     [S_THEN] = {S_THEN, TOKEN_THEN, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
@@ -619,7 +617,6 @@ const char *token_type_to_string(Token type) {
         case TOKEN_REPEAT:          return "TOKEN_REPEAT";
         case TOKEN_SHOW:            return "TOKEN_SHOW";
         
-        case TOKEN_THAN:            return "TOKEN_THAN";
         case TOKEN_EACH:            return "TOKEN_EACH";
         case TOKEN_OF:              return "TOKEN_OF";
         case TOKEN_THEN:            return "TOKEN_THEN";
