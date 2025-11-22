@@ -417,11 +417,8 @@ const StateNode MACHINE_DEF[NUM_STATES] = {
         {DEFAULT_CHAR, S_IDENT} // Explicit Default Transition
     }, 17}, 
 
-    // Intermediate States (Default transitions now point to S_IDENT)
     [S_A] = {S_A, TOKEN_NONE, {{'n', S_AN}, {'s', S_AS}, {'l', S_AL}, {DEFAULT_CHAR, S_IDENT}}, 4},
     [S_AN] = {S_AN, TOKEN_NONE, {{'d', S_AND}, {DEFAULT_CHAR, S_IDENT}}, 2},
-    
-    // Final States (Transitions point to S_IDENT for trailing chars)
     [S_AND] = {S_AND, TOKEN_AND, {{DEFAULT_CHAR, S_IDENT}}, 1}, 
     
     [S_AS] = {S_AS, TOKEN_NONE, {{'k', S_ASK}, {DEFAULT_CHAR, S_IDENT}}, 2},
