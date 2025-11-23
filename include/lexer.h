@@ -191,6 +191,6 @@ void free_lexer(Lexer *lexer);
 
 int handle_number_token(Lexer *lexer);
 
-//void to_lower_case(char *str, size_t length)
+static void str_to_lower(char *str);
 
 #endif

@@ -1,7 +1,7 @@
 start
 
     # Declaration Statements (Data Types) 
-    number num1 = 10;
+    number Num1 = 10;
     decimal dval = 1.5;
     letter char = 'A';
     word w_msg = "Test";

@@ -264,6 +264,8 @@ static void handle_identifier(Lexer *lexer) {
 
     strncpy(identifier, str_start, str_len);
     identifier[str_len] = '\0';
+    str_to_lower(identifier);
+    
     //printf("Identified identifier: '%s'\n", identifier); // Debugging line
     if (keyword_token != TOKEN_IDENTIFIER) {
 
@@ -359,6 +361,12 @@ Token handle_keyword(const char *input_word, size_t word_length) {
         return current_node->output;
     }
     return TOKEN_IDENTIFIER;
+}
+
+static void str_to_lower(char *str) {
+    for (char *p = str; *p; p++) {
+        *p = tolower((unsigned char)*p);
+    }
 }
 
 // Free the memory allocated for the lexer
