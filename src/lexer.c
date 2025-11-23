@@ -13,210 +13,271 @@ int lex(Lexer *lexer) {
       //  printf("Current char: '%c'\n", *lexer->cur_tok);
         switch (*lexer->cur_tok) {
             case ' ':
-                // do nothing
-                break;
-            case '\n':
-                lexer->line_number++;
-                lexer->line_start = lexer->cur_tok + 1;
-                break;
-            case '(':
-                add_token(lexer, TOKEN_LPAREN, "(");
-                break;
-            case ')':
-                add_token(lexer, TOKEN_RPAREN, ")");
-                break;
-            case '{':
-                add_token(lexer, TOKEN_LBRACE, "{");
-                break;
-            case '}':
-                add_token(lexer, TOKEN_RBRACE, "}");
-                break;
-            case '[':
-                add_token(lexer, TOKEN_LBRACKET, "[");
-                break;
-            case ']':
-                add_token(lexer, TOKEN_RBRACKET, "]");
-                break;
-            case ',':
-                add_token(lexer, TOKEN_COMMA, ",");
-                break;
-            case ';':
-                add_token(lexer, TOKEN_SEMICOLON, ";");
-                break;
-            case '#':
-                while (*lexer->cur_tok != '\n' && *lexer->cur_tok != '\0') lexer->cur_tok++;
-                break;
-            case ':':
-                add_token(lexer, TOKEN_COLON, ":");
-                break;
-            case '.':
-                add_token(lexer, TOKEN_DOT, ".");
-                break;
-            case '+':
-                add_token(lexer, TOKEN_PLUS, "+");
-                break;
-            case '-':
-                add_token(lexer, TOKEN_MIN, "-"); 
-                break;
-            case '*':
-                add_token(lexer, TOKEN_MUL, "*");
-                break;
-            case '/':
-                add_token(lexer, TOKEN_DIV, "/");
-                break;
-            case '%':
-                add_token(lexer, TOKEN_MOD, "%");
-                break;
-            case '~':
-                add_token(lexer, TOKEN_IDIV, "~");
-                break;
-            case '^':
-                add_token(lexer, TOKEN_POW, "^");
-                break;
-            case '\\':
-                add_token(lexer, TOKEN_NONE, "\\");
-                break;
-            case '>': {
-                if (*(lexer->cur_tok + 1) == '=') {
-                    lexer->cur_tok++; 
-                    add_token(lexer, TOKEN_GREATEREQUAL, ">="); 
-                } else {
-                    add_token(lexer, TOKEN_GREATER, ">");
-                }
+            lexer->cur_tok++;
+            continue;
+            
+        case '\n':
+            lexer->line_number++;
+            lexer->line_start = lexer->cur_tok + 1;
+            lexer->cur_tok++; 
+            continue;
+
+        case '(':
+            add_token(lexer, TOKEN_LPAREN, "(", 0);
+            lexer->cur_tok++;
+            continue; 
+
+        case ')':
+            add_token(lexer, TOKEN_RPAREN, ")", 0);
+            lexer->cur_tok++;
+            continue; 
+
+        case '{':
+            add_token(lexer, TOKEN_LBRACE, "{", 0);
+            lexer->cur_tok++;
+            continue; 
+
+        case '}':
+            add_token(lexer, TOKEN_RBRACE, "}", 0);
+            lexer->cur_tok++;
+            continue; 
+
+        case '[':
+            add_token(lexer, TOKEN_LBRACKET, "[", 0);
+            lexer->cur_tok++;
+            continue; 
+
+        case ']':
+            add_token(lexer, TOKEN_RBRACKET, "]", 0);
+            lexer->cur_tok++;
+            continue; 
+
+        case ',':
+            add_token(lexer, TOKEN_COMMA, ",", 0);
+            lexer->cur_tok++;
+            continue; 
+
+        case ';':
+            add_token(lexer, TOKEN_SEMICOLON, ";", 0);
+            lexer->cur_tok++;
+            continue; 
+
+        case '#':
+            while (*lexer->cur_tok != '\n' && *lexer->cur_tok != '\0') lexer->cur_tok++;
+            continue; 
+
+        case ':':
+            add_token(lexer, TOKEN_COLON, ":", 0);
+            lexer->cur_tok++;
+            continue; 
+
+        case '.':
+            add_token(lexer, TOKEN_DOT, ".", 0);
+            lexer->cur_tok++;
+            continue;
+
+        case '+':
+            add_token(lexer, TOKEN_PLUS, "+", 0);
+            lexer->cur_tok++;
+            continue; 
+
+        case '-':
+            add_token(lexer, TOKEN_MIN, "-", 0); 
+            lexer->cur_tok++;
+            continue; 
+
+        case '*':
+            add_token(lexer, TOKEN_MUL, "*", 0);
+            lexer->cur_tok++;
+            continue;
+
+        case '/':
+            add_token(lexer, TOKEN_DIV, "/", 0);
+            lexer->cur_tok++;
+            continue;
+
+        case '%':
+            add_token(lexer, TOKEN_MOD, "%", 0);
+            lexer->cur_tok++;
+            continue;
+
+        case '~':
+            add_token(lexer, TOKEN_IDIV, "~", 0);
+            lexer->cur_tok++;
+            continue;
+
+        case '^':
+            add_token(lexer, TOKEN_POW,  "^", 0);
+            lexer->cur_tok++;
+            continue;
+
+        case '\\':
+            add_token(lexer, INVALID, "\\", 0);
+            lexer->cur_tok++;
+            continue;
+
+        case '>': {
+            if (*(lexer->cur_tok + 1) == '=') {
+                add_token(lexer, TOKEN_GREATEREQUAL, ">=", 0); 
+                lexer->cur_tok += 2;
+            } else {
+                add_token(lexer, TOKEN_GREATER, ">", 0);
                 lexer->cur_tok++;
-                break;
             }
+            continue;
+        }
 
-            case '<': {
-                if (*(lexer->cur_tok + 1) == '=') {
-                    lexer->cur_tok++; 
-                    add_token(lexer, TOKEN_LESSEQUAL, "<="); 
-                } else {
-
-                    add_token(lexer, TOKEN_LESS, "<");
-                }
-                lexer->cur_tok++; 
-                break;
-            }
-
-            case '=': {
-                if (*(lexer->cur_tok + 1) == '=') {
-                    lexer->cur_tok++; 
-                    add_token(lexer, TOKEN_IS, "=="); 
-                } else {
-                    add_token(lexer, TOKEN_ASSIGN, "=");
-                }
+        case '<': {
+            if (*(lexer->cur_tok + 1) == '=') {
+                add_token(lexer, TOKEN_LESSEQUAL,  "<=", 0); 
+                lexer->cur_tok += 2; 
+            } else {
+                add_token(lexer, TOKEN_LESS, "<", 0);
                 lexer->cur_tok++;
-                break;
+            }
+            continue;
+        }
+
+        case '=': {
+            if (*(lexer->cur_tok + 1) == '=') {
+                add_token(lexer, TOKEN_IS, "==", 0); 
+                lexer->cur_tok += 2;
+            } else {
+                add_token(lexer, TOKEN_ASSIGN, "=", 0);
+                lexer->cur_tok++;
+            }
+            continue;
+        }
+
+        case '!': {
+            if (*(lexer->cur_tok + 1) == '=') {
+                add_token(lexer, TOKEN_ISNT, "!=", 0); 
+                lexer->cur_tok += 2; 
+            } else {
+                add_token(lexer, TOKEN_NOT, "!", 0);
+                lexer->cur_tok++;
+            }
+            continue;
+        }
+
+        case '&': {
+            if (*(lexer->cur_tok + 1) == '&') {
+                add_token(lexer, TOKEN_AND, "&&", 0); 
+                lexer->cur_tok += 2;
+            } else {
+                fprintf(stderr, "%zu: Error: Unexpected character '&'\n", lexer->line_number);
+                add_token(lexer, INVALID, "&", 0);
+                lexer->cur_tok++;
+            }
+            continue;
+        }
+
+        case '|': {
+            if (*(lexer->cur_tok + 1) == '|') {
+                add_token(lexer, TOKEN_OR, "||", 0); 
+                lexer->cur_tok += 2;
+            } else {
+                fprintf(stderr, "%zu: Error: Unexpected character '|'\n", lexer->line_number);
+                add_token(lexer, INVALID, "|", 0);
+                lexer->cur_tok++;
+            }
+            continue;
+        }
+
+        case '"': {
+            lexer->cur_tok++;
+            char *str_start = lexer->cur_tok;
+            Token token_type = TOKEN_STRING_LITERAL;
+
+            while (*lexer->cur_tok != '"' && *lexer->cur_tok != '\0') {
+                lexer->cur_tok++;
             }
 
-            case '!': {
-                if (*(lexer->cur_tok + 1) == '=') {
-                    lexer->cur_tok++; 
-                    add_token(lexer, TOKEN_ISNT, "!="); 
-                } else {
-                    add_token(lexer, TOKEN_NOT, "!");
-                }
-                lexer->cur_tok++; 
-                break;
+            if (*lexer->cur_tok == '\0') {
+                fprintf(stderr, "%zu: Error: Missing closing quote for string literal.\n", lexer->line_number);
+                token_type = INVALID;
             }
-            case '&': {
-                if (*(lexer->cur_tok + 1) == '&') {
-                    lexer->cur_tok++; 
-                    add_token(lexer, TOKEN_AND, "&&"); 
-                } else {
-                    fprintf(stderr, "%zu: Error: Unexpected character '&'\n", lexer->line_number);
-                    return 1; 
-                }
-                lexer->cur_tok++; 
-                break;
+            
+
+            int str_len = lexer->cur_tok - str_start;
+            char *text = (char *)malloc(str_len + 1);
+            if (text == NULL) {
+                fprintf(stderr, "Fatal Error: Memory allocation failed for string literal\n");
+                exit(1);
             }
-            case '|': {
-                if (*(lexer->cur_tok + 1) == '|') {
-                    lexer->cur_tok++; 
-                    add_token(lexer, TOKEN_OR, "||"); 
-                } else {
-                    fprintf(stderr, "%zu: Error: Unexpected character '|'\n", lexer->line_number);
-                    return 1; 
-                }
-                lexer->cur_tok++; 
-                break;
+            
+            strncpy(text, str_start, str_len);
+            text[str_len] = '\0';
+            add_token(lexer, token_type, text, 1);
+            lexer->cur_tok++;
+            continue;
+        }
+
+        case '\'': {
+            lexer->cur_tok++;
+            char *char_start = lexer->cur_tok;
+            Token token_type = TOKEN_CHAR_LITERAL;
+            
+            if (*lexer->cur_tok == '\0' || *lexer->cur_tok == '\n') {
+                fprintf(stderr, "%zu: Error: Unterminated character literal.\n", lexer->line_number);
+                // Do not advance `cur_tok` past '\0' or '\n' here.
+                add_token(lexer, INVALID, "'", 0);
+                continue;
             }
-            default:
-                if (*lexer->cur_tok == '"') {
+            
+            char value = *lexer->cur_tok;
+            lexer->cur_tok++;
+            
+            if (*lexer->cur_tok != '\'') {
+                while (*lexer->cur_tok != '\'' && *lexer->cur_tok != '\0' && *lexer->cur_tok != '\n') {
                     lexer->cur_tok++;
-                    char *str_start = lexer->cur_tok;
-
-                    while (*lexer->cur_tok != '"' && *lexer->cur_tok != '\0') {
-                        lexer->cur_tok++;
-                    }
-
-                    if (*lexer->cur_tok == '\0') {
-                        fprintf(stderr, "%zu: Error: Missing closing quote for string literal.\n", lexer->line_number);
-                        return 1; 
-                    }
-                    
-
-                    int str_len = lexer->cur_tok - str_start;
-                    char *text = (char *)malloc(str_len + 1);
-                    
-                    strncpy(text, str_start, str_len);
-                    text[str_len] = '\0';
-                    add_token(lexer, TOKEN_STRING_LITERAL, text);
-                    lexer->cur_tok++;
-                    continue;
-
-                } else if (*lexer->cur_tok == '\'') {
-                    lexer->cur_tok++;
-                    char *char_start = lexer->cur_tok;
-                    
-                    if (*lexer->cur_tok == '\0') {
-                        fprintf(stderr, "%zu: Error: Unterminated character literal.\n", lexer->line_number);
-                        return 1; 
-                    }
-                    
-                    char value = *lexer->cur_tok;
-                    lexer->cur_tok++;
-                    
-                    if (*lexer->cur_tok != '\'') {
-                        fprintf(stderr, "%zu: Error: Missing closing quote for character literal.\n", lexer->line_number);
-                        return 1; 
-                    }
-                    
-                    char *char_str = (char *)malloc(2);
-                    char_str[0] = value;
-                    char_str[1] = '\0';
-                    add_token(lexer, TOKEN_CHAR_LITERAL, char_str);
-                    lexer->cur_tok++; // Move past the closing quote
-                    continue;
-
-                } else if (isalpha(*lexer->cur_tok) || *lexer->cur_tok == '_') {
-                    handle_identifier(lexer);
-                    continue;
-                } else if (isdigit(*lexer->cur_tok) || (*lexer->cur_tok == '.' && isdigit(*(lexer->cur_tok + 1)))) {
-                    if (handle_number_token(lexer) != 0) {
-                        return 1; 
-                        }
-                    continue; 
-                } else {
-                    fprintf(stderr, "Unknown token at line %zu, col %zu: '%c' (ASCII: %d)\n", 
-                            lexer->line_number, 
-                            lexer->cur_tok - lexer->line_start,
-                            *lexer->cur_tok,
-                            (int)*lexer->cur_tok);
-                    return 1;
                 }
-                break;
+                
+                fprintf(stderr, "%zu: Error: Invalid character literal (expected exactly one character).\n", lexer->line_number);
+                token_type = INVALID;
 
+                if (*lexer->cur_tok == '\'') {
+                    lexer->cur_tok++; // Consume the closing quote
+                }
+            } else {
+                lexer->cur_tok++; // Consume the closing quote
+            }
+
+            char *char_str = (char *)malloc(2);
+            if (char_str == NULL) {
+                fprintf(stderr, "Fatal Error: Memory allocation failed for character literal\n");
+                exit(1);
+            }
+            char_str[0] = value;
+            char_str[1] = '\0';
+            
+            add_token(lexer, token_type, char_str, 1);
+            free(char_str);
+            continue;
+        }
+        default: 
+            if (isalpha(*lexer->cur_tok) || *lexer->cur_tok == '_') {
+                handle_identifier(lexer);
+                continue;
+            } else if (isdigit(*lexer->cur_tok) || (*lexer->cur_tok == '.' && isdigit(*(lexer->cur_tok + 1)))) {
+                handle_number_token(lexer);
+                continue; 
+            } else {
+                fprintf(stderr, "Unknown token at line %zu, col %zu: '%c' (ASCII: %d)\n", 
+                        lexer->line_number, 
+                        lexer->cur_tok - lexer->line_start,
+                        *lexer->cur_tok,
+                        (int)*lexer->cur_tok);
+                add_token(lexer, INVALID, lexer->cur_tok, 0);
+            }
+            break;
          }
-        // advance token 
-        lexer->cur_tok++;
     }
-    add_token(lexer, TOKEN_EOF, NULL);
+    add_token(lexer, TOKEN_EOF, NULL, 0);
     return 0;
 }
 
-static void add_token(Lexer *lexer, Token type, char *val) {
+static void add_token(Lexer *lexer, Token type, char *val, int malloced) {
     if (lexer->token_count == lexer->capacity) {
         size_t new_capacity = lexer->capacity == 0 ? 8 : lexer->capacity * 2;
         lexer->tokens = (TokenData *)realloc(lexer->tokens, new_capacity * sizeof(TokenData));
@@ -230,6 +291,7 @@ static void add_token(Lexer *lexer, Token type, char *val) {
 
     lexer->tokens[lexer->token_count].type = type;
     lexer->tokens[lexer->token_count].val = val;
+    lexer->tokens[lexer->token_count].need_free = malloced;
 
     // setting the location
     lexer->tokens[lexer->token_count].loc.line = lexer->line_number;
@@ -261,62 +323,80 @@ static void handle_identifier(Lexer *lexer) {
     Token keyword_token = handle_keyword(str_start, str_len);
     
     char *identifier = (char *)malloc(str_len + 1);
+    if (identifier == NULL) {
+        fprintf(stderr, "Fatal Error: Memory allocation failed for identifier\n");
+        exit(1);
+    }
 
     strncpy(identifier, str_start, str_len);
     identifier[str_len] = '\0';
     str_to_lower(identifier);
-    
+
     //printf("Identified identifier: '%s'\n", identifier); // Debugging line
     if (keyword_token != TOKEN_IDENTIFIER) {
 
-        add_token(lexer, keyword_token, identifier);
+        add_token(lexer, keyword_token, identifier, 1);
     } else {
-        add_token(lexer, TOKEN_IDENTIFIER, identifier);
+        add_token(lexer, TOKEN_IDENTIFIER, identifier, 1);
     }
 }
 
-int handle_number_token(Lexer *lexer) {
+void handle_number_token(Lexer *lexer) {
     char *str_start = lexer->cur_tok;
     int decimal_count = 0;
+    int is_valid = 1; 
     
-    // Handle leading decimal point (e.g., .123)
     if (*str_start == '.') {
+        // Must be followed by a digit (e.g., .123)
         if (!isdigit(*(str_start + 1))) {
-            return 0; 
+            return;
         }
         decimal_count = 1;
     }
     
+ 
     while (isdigit(*lexer->cur_tok) || *lexer->cur_tok == '.') {
         if (*lexer->cur_tok == '.') {
             if (++decimal_count > 1) {
-                fprintf(stderr, "%zu: Invalid number format — multiple decimal points\n", 
-                         lexer->line_number);
-                // Advance past the faulty token to attempt recovery
-                while (isalnum(*lexer->cur_tok) || *lexer->cur_tok == '.') {
-                    lexer->cur_tok++;
-                }
-                return 1;
+                // We've found the second decimal point.
+                is_valid = 0; 
+                fprintf(stderr, "%zu: Error: Invalid number format — multiple decimal points\n", 
+                                 lexer->line_number);
+                break; 
             }
         }
         lexer->cur_tok++;
     }
 
-    // Now copy the token string
+    //Recovery
+    if (!is_valid) {
+        // CRITICAL: Consume the remaining garbage as part of the INVALID token's lexeme
+        while (isalnum(*lexer->cur_tok) || *lexer->cur_tok == '.') {
+            lexer->cur_tok++;
+        }
+    }
+
     int str_len = lexer->cur_tok - str_start;
     char *number_str = (char *)malloc(str_len + 1);
-    
     if (number_str == NULL) {
-        fprintf(stderr, "Error: Memory allocation failed for number token\n");
-        return 1;
+        fprintf(stderr, "Fatal Error: Memory allocation failed for number token\n");
+        exit(1);
     }
     
     strncpy(number_str, str_start, str_len);
     number_str[str_len] = '\0';
 
-    add_token(lexer, decimal_count >= 1 ? TOKEN_DECIMAL : TOKEN_NUMBER, number_str);
-    
-    return 0; 
+    // Decide the token type based on the flag
+    Token token_type;
+    if (!is_valid) {
+        token_type = INVALID;
+    } else if (decimal_count >= 1) {
+        token_type = TOKEN_DECIMAL; // Floating point number
+    } else {
+        token_type = TOKEN_NUMBER; // Integer number
+    }
+
+    add_token(lexer, token_type, number_str, 1);
 }
 
 Token handle_keyword(const char *input_word, size_t word_length) {
@@ -373,13 +453,7 @@ static void str_to_lower(char *str) {
 void free_lexer(Lexer *lexer) {
 
     for (size_t i = 0; i < lexer->token_count; i++) {
-        
-        if (lexer->tokens[i].type == TOKEN_IDENTIFIER || 
-            lexer->tokens[i].type == TOKEN_WORD ||
-            lexer->tokens[i].type == TOKEN_NUMBER ||
-            lexer->tokens[i].type == TOKEN_DECIMAL ||
-            lexer->tokens[i].type == TOKEN_LETTER) 
-        {
+        if (lexer->tokens[i].need_free) {
             free(lexer->tokens[i].val);
         }
     }
@@ -654,6 +728,7 @@ const char *token_type_to_string(Token type) {
         case TOKEN_MAIN:            return "TOKEN_MAIN";
         case TOKEN_NONE:            return "TOKEN_NONE";
         case TOKEN_EOF:             return "TOKEN_EOF";
+        case INVALID:               return "INVALID";
         
         default:
             return "TOKEN_UNKNOWN";

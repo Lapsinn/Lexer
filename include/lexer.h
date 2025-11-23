@@ -72,6 +72,8 @@ typedef enum {
     TOKEN_EXIT,
     TOKEN_LOOP,
     TOKEN_MAIN,
+
+    INVALID,
     TOKEN_EOF
 } Token;
 
@@ -84,6 +86,7 @@ typedef struct {
     Token type; // The type of the token
     char *val; // The value of the token
     Location loc; // The location of the token
+    int need_free; // Flag to indicate if val needs to be freed
 } TokenData;
 
 typedef struct {
@@ -175,7 +178,7 @@ const StateNode* get_node(State s);
 
 int lex(Lexer *lexer);
 
-static void add_token(Lexer *lexer, Token type, char *val);
+static void add_token(Lexer *lexer, Token type, char *val, int malloced);
 
 static void handle_identifier(Lexer *lexer);
 
@@ -189,7 +192,7 @@ void printLexerTokens(const Lexer *lexer);
 
 void free_lexer(Lexer *lexer);
 
-int handle_number_token(Lexer *lexer);
+void handle_number_token(Lexer *lexer);
 
 static void str_to_lower(char *str);
 
