@@ -323,7 +323,7 @@ Token handle_keyword(const char *input_word, size_t word_length) {
     const StateNode* current_node = get_node(S_START);
 
     for (size_t i = 0; i < word_length; i++) {
-        char c = input_word[i];
+        char c = tolower((unsigned char)input_word[i]);
 
         if (c < 'a' || c > 'z') {
             return TOKEN_IDENTIFIER; 
@@ -398,16 +398,6 @@ void printLexerTokens(const Lexer *lexer) {
     printf("--------------------------------\n");
 }
 
-void to_lower_case(char *str, size_t length) {
-    if (str == NULL) {
-        return; // Handle null input safely
-    }
-
-    // Iterate through the string until the null terminator ('\0') is reached
-    for (size_t i = 0; i < length; i++) {
-        str[i] = tolower((unsigned char)str[i]);
-    }
-}
 
 const StateNode MACHINE_DEF[NUM_STATES] = {
     [S_START] = {S_START, TOKEN_NONE, {
@@ -420,7 +410,6 @@ const StateNode MACHINE_DEF[NUM_STATES] = {
     [S_A] = {S_A, TOKEN_NONE, {{'n', S_AN}, {'s', S_AS}, {'l', S_AL}, {DEFAULT_CHAR, S_IDENT}}, 4},
     [S_AN] = {S_AN, TOKEN_NONE, {{'d', S_AND}, {DEFAULT_CHAR, S_IDENT}}, 2},
     [S_AND] = {S_AND, TOKEN_AND, {{DEFAULT_CHAR, S_IDENT}}, 1}, 
-    
     [S_AS] = {S_AS, TOKEN_NONE, {{'k', S_ASK}, {DEFAULT_CHAR, S_IDENT}}, 2},
     [S_ASK] = {S_ASK, TOKEN_ASK, {{DEFAULT_CHAR, S_IDENT}}, 1},
     [S_AL] = {S_AL, TOKEN_NONE, {{'s', S_ALS}, {DEFAULT_CHAR, S_IDENT}}, 2},
