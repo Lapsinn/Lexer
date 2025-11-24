@@ -106,6 +106,11 @@ int lex(Lexer *lexer) {
             lexer->cur_tok++;
             continue;
 
+        case '?':
+            add_token(lexer, TOKEN_QMARK, "?", 0);
+            lexer->cur_tok++;
+            continue;
+
         case '^':
             add_token(lexer, TOKEN_POW,  "^", 0);
             lexer->cur_tok++;
@@ -720,6 +725,7 @@ const char *token_type_to_string(Token type) {
         case TOKEN_AND:             return "TOKEN_AND";
         case TOKEN_OR:              return "TOKEN_OR";
         case TOKEN_NOT:             return "TOKEN_NOT";
+        case TOKEN_QMARK:           return "TOKEN_QMARK";
         
         case TOKEN_IMPORT:          return "TOKEN_IMPORT";
         case TOKEN_GOTO:            return "TOKEN_GOTO";
