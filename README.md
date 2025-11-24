@@ -49,3 +49,5 @@ Or on Windows:
 ```bash
 my_program.exe sample.ec
 ```
+
+![Output Example](images/screenshot.png)
