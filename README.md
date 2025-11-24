@@ -50,4 +50,4 @@ Or on Windows:
 my_program.exe sample.ec
 ```
 
-![Output Example](images/screenshot.png)
+![Output Example](img/screenshot.png)
