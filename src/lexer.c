@@ -8,6 +8,9 @@
 
 #define DEFAULT_CHAR '\0'
 
+//to do assigment operators
+//add boolean
+//else  if
 int lex(Lexer *lexer) {
     while (*lexer->cur_tok != '\0') {
       //  printf("Current char: '%c'\n", *lexer->cur_tok);
@@ -77,33 +80,63 @@ int lex(Lexer *lexer) {
             continue;
 
         case '+':
-            add_token(lexer, TOKEN_PLUS, "+", 0);
-            lexer->cur_tok++;
-            continue; 
+            if (*(lexer->cur_tok + 1) == '=') {
+                add_token(lexer, TOKEN_PLUS_EQUAL, "+=", 0); 
+                lexer->cur_tok += 2;
+            } else {
+                add_token(lexer, TOKEN_PLUS, "+", 0);
+                lexer->cur_tok++;
+            }
+            continue;
 
         case '-':
-            add_token(lexer, TOKEN_MIN, "-", 0); 
-            lexer->cur_tok++;
-            continue; 
+            if (*(lexer->cur_tok + 1) == '=') {
+                add_token(lexer, TOKEN_MINUS_EQUAL, "-=", 0); 
+                lexer->cur_tok += 2;
+            } else {
+                add_token(lexer, TOKEN_MIN, "-", 0);
+                lexer->cur_tok++;
+            }
+            continue;
 
         case '*':
-            add_token(lexer, TOKEN_MUL, "*", 0);
-            lexer->cur_tok++;
+           if (*(lexer->cur_tok + 1) == '=') {
+                add_token(lexer, TOKEN_MUL_EQUAL, "*=", 0); 
+                lexer->cur_tok += 2;
+            } else {
+                add_token(lexer, TOKEN_MUL, "*", 0);
+                lexer->cur_tok++;
+            }
             continue;
 
         case '/':
-            add_token(lexer, TOKEN_DIV, "/", 0);
-            lexer->cur_tok++;
+            if (*(lexer->cur_tok + 1) == '=') {
+                add_token(lexer, TOKEN_DIV_EQUAL, "/=", 0); 
+                lexer->cur_tok += 2;
+            } else {
+                add_token(lexer, TOKEN_DIV, "/", 0);
+                lexer->cur_tok++;
+            }
             continue;
 
         case '%':
-            add_token(lexer, TOKEN_MOD, "%", 0);
-            lexer->cur_tok++;
+            if (*(lexer->cur_tok + 1) == '=') {
+                add_token(lexer, TOKEN_MOD_EQUAL, "%=", 0); 
+                lexer->cur_tok += 2;
+            } else {
+                add_token(lexer, TOKEN_MOD, "%", 0);
+                lexer->cur_tok++;
+            }
             continue;
 
         case '~':
-            add_token(lexer, TOKEN_IDIV, "~", 0);
-            lexer->cur_tok++;
+            if (*(lexer->cur_tok + 1) == '=') {
+                add_token(lexer, TOKEN_IDIV_EQUAL, "~=", 0); 
+                lexer->cur_tok += 2;
+            } else {
+                add_token(lexer, TOKEN_IDIV, "~", 0);
+                lexer->cur_tok++;
+            }
             continue;
 
         case '?':
@@ -192,7 +225,7 @@ int lex(Lexer *lexer) {
         case '"': {
             lexer->cur_tok++;
             char *str_start = lexer->cur_tok;
-            Token token_type = TOKEN_STRING_LITERAL;
+            Token token_type = TOKEN_STR_LIT;
 
             while (*lexer->cur_tok != '"' && *lexer->cur_tok != '\0') {
                 lexer->cur_tok++;
@@ -221,7 +254,7 @@ int lex(Lexer *lexer) {
         case '\'': {
             lexer->cur_tok++;
             char *char_start = lexer->cur_tok;
-            Token token_type = TOKEN_CHAR_LITERAL;
+            Token token_type = TOKEN_CHAR_LIT;
             
             if (*lexer->cur_tok == '\0' || *lexer->cur_tok == '\n') {
                 fprintf(stderr, "%zu: Error: Unterminated character literal.\n", lexer->line_number);
@@ -503,6 +536,11 @@ const StateNode MACHINE_DEF[NUM_STATES] = {
     [S_ALS] = {S_ALS, TOKEN_NONE, {{'o', S_ALSO}, {DEFAULT_CHAR, S_IDENT}}, 2},
     [S_ALSO] = {S_ALSO, TOKEN_ALSO, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
+    [S_B] = {S_B, TOKEN_NONE, {{'o', S_BO}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_BO] = {S_BO, TOKEN_NONE, {{'o', S_BOO}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_BOO] = {S_BOO, TOKEN_NONE, {{'l', S_BOOL}, {DEFAULT_CHAR, S_IDENT}}, 2},
+    [S_BOOL] = {S_BOOL, BOOL, {{DEFAULT_CHAR, S_IDENT}}, 1},
+
     [S_C] = {S_C, TOKEN_NONE, {{'o', S_CO}, {DEFAULT_CHAR, S_IDENT}}, 2},
     [S_CO] = {S_CO, TOKEN_NONE, {{'n', S_CON}, {DEFAULT_CHAR, S_IDENT}}, 2},
     [S_CON] = {S_CON, TOKEN_NONE, {{'t', S_CONT}, {'s', S_CONS}, {DEFAULT_CHAR, S_IDENT}}, 3},
@@ -665,9 +703,10 @@ const char *token_type_to_string(Token type) {
         case TOKEN_NULL:            return "TOKEN_NULL";
         case TOKEN_SIZEOF:          return "TOKEN_SIZEOF";
         case TOKEN_RETURN:          return "TOKEN_RETURN";
+        case BOOL:                 return "BOOL";
      
-        case TOKEN_STRING_LITERAL:  return "TOKEN_STRING_LITERAL";
-        case TOKEN_CHAR_LITERAL:    return "TOKEN_CHAR_LITERAL";
+        case TOKEN_STR_LIT:         return "TOKEN_STR_LIT";
+        case TOKEN_CHAR_LIT:        return "TOKEN_CHAR_LIT";
         case TOKEN_COLON:           return "TOKEN_COLON";
         case TOKEN_DOT:             return "TOKEN_DOT";
       
@@ -740,3 +779,5 @@ const char *token_type_to_string(Token type) {
             return "TOKEN_UNKNOWN";
     }
 }
+
+
