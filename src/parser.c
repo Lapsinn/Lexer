@@ -1,6 +1,3 @@
-// ULTRA-ROBUST PARSER - GUARANTEED TREE GENERATION
-// Key: Recover from ANY error, no matter how severe
-
 #include "parser.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,15 +72,7 @@ int is_assignment_operator(Token token) {
            token == TOKEN_DIV_EQUAL || token == TOKEN_MOD_EQUAL;
 }
 
-// ============================================================================
-// AGGRESSIVE ERROR RECOVERY
-// ============================================================================
-
-/**
- * ULTRA-AGGRESSIVE: Skip to ANY of these tokens
- * Guaranteed to recover no matter what
- */
-void synchronize_aggressive(Parser* parser) {
+void synchronize(Parser* parser) {
     while (!is_at_end(parser)) {
         // Safe termination points
         if (peek(parser) == TOKEN_SEMICOLON) {

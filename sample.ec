@@ -20,7 +20,7 @@ start
     number modulo = 17 % 5;
     show(modulo);
     
-    if x > 5
+    if (x > 5)
     {
         show("x is greater than 5");
     }
@@ -29,17 +29,17 @@ start
         show("x is not greater than 5");
     }
     
-    if y <= 10
+    if (y <= 10)
     {
         show("y is less than or equal to 10");
     }
     
-    if a >= 15 && b < 5
+    if (a >= 15 && b < 5)
     {
         show("Both conditions are true");
     }
     
-    if x == 10 || y == 3
+    if (x == 10 || y == 3)
     {
         show("At least one condition is true");
     }
@@ -51,12 +51,12 @@ start
     
     repeat(number i = 0; i < 10; i += 1)
     {
-        if i == 5
+        if (i == 5)
         {
             stop;
         }
         
-        if i == 2
+        if (i == 2)
         {
             continue;
         }
