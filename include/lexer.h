@@ -7,14 +7,16 @@ typedef enum {
     TOKEN_NONE = 0,
     TOKEN_IDENTIFIER,  
     TOKEN_NUMBER,
+    TOKEN_INTEGER,
     TOKEN_DECIMAL,
+    TOKEN_FLOAT,
     TOKEN_LETTER,
     TOKEN_CHAR_LIT,
     TOKEN_WORD, 
     TOKEN_STR_LIT,
     TOKEN_TRUE,
     TOKEN_FALSE,
-    BOOL,
+    TOKEN_BOOL,
     TOKEN_SEMICOLON,      
     TOKEN_COMMA,          
     TOKEN_COLON,
@@ -57,9 +59,6 @@ typedef enum {
     
     // Arithmetic Operators
     TOKEN_PLUS, TOKEN_MIN, TOKEN_MUL, TOKEN_DIV, TOKEN_MOD, TOKEN_IDIV, TOKEN_POW,
-    
-    // Single Value Operators (Unary)
-    TOKEN_POS, TOKEN_NEG, TOKEN_NEXT, TOKEN_PREV,
     
     // Comparison Operators (Relational)
     TOKEN_IS, TOKEN_ISNT, TOKEN_GREATER, TOKEN_LESS,
@@ -188,9 +187,11 @@ const StateNode* get_node(State s);
 
 int lex(Lexer *lexer);
 
-static void add_token(Lexer *lexer, Token type, char *val, int malloced);
+void add_token(Lexer *lexer, Token type, char *val, int malloced);
 
-static void handle_identifier(Lexer *lexer);
+void handle_identifier(Lexer *lexer);
+
+void str_to_lower(char *str);
 
 const char *token_type_to_string(Token type);
 
@@ -204,6 +205,6 @@ void free_lexer(Lexer *lexer);
 
 void handle_number_token(Lexer *lexer);
 
-static void str_to_lower(char *str);
+
 
 #endif

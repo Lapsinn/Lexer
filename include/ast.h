@@ -27,16 +27,9 @@ typedef enum {
     NODE_UNARY_EXPR,
     NODE_LITERAL,
     NODE_IDENTIFIER,
-    NODE_FUNCTION_CALL,
-    
-    // Logical/Relational
-    NODE_LOGICAL_EXPR,
-    NODE_RELATION_EXPR,
     
     // Special
-    NODE_IF_ELSE,
-    NODE_PARAM_LIST,
-    NODE_ARG_LIST
+    NODE_IF_ELSE
 } ASTNodeType;
 
 // Forward declaration
@@ -49,12 +42,12 @@ typedef struct {
 
 typedef struct {
     enum {
-        LITERAL_NUMBER,
-        LITERAL_DECIMAL,
-        LITERAL_STRING,
-        LITERAL_CHAR,
-        LITERAL_BOOL,
-        LITERAL_NULL
+        LITERAL_NUMBER,   // For Integers (TOKEN_INTEGER)
+        LITERAL_DECIMAL,  // For Floats (TOKEN_FLOAT)
+        LITERAL_STRING,   // For Strings (TOKEN_STR_LIT)
+        LITERAL_CHAR,     // For Chars (TOKEN_CHAR_LIT)
+        LITERAL_BOOL,     // For Booleans (TOKEN_TRUE/FALSE)
+        LITERAL_NULL      // For Null
     } literal_type;
     union {
         int int_value;
@@ -74,8 +67,8 @@ typedef struct {
         OP_MOD,      // %
         OP_IDIV,     // ~
         OP_POW,      // ^
-        OP_EQ,       // ==
-        OP_NEQ,      // !=
+        OP_EQ,       // ==, IS
+        OP_NEQ,      // !=, ISNT
         OP_LT,       // <
         OP_GT,       // >
         OP_LTE,      // <=
@@ -104,7 +97,7 @@ typedef struct {
 
 typedef struct {
     char* var_name;
-    char* data_type;  // "number", "decimal", "letter", etc.
+    char* data_type;     // "number", "decimal", "letter", etc.
     ASTNode* init_expr;  // NULL if no initialization
     int is_const;
 } VarDeclNode;
@@ -154,7 +147,7 @@ struct ASTNode {
     ASTNode* parent;
     void* specific_node;
     
-    // Source location info (optional, for error reporting)
+    // Source location info
     int line;
     int column;
 };
@@ -165,5 +158,7 @@ void free_ast(ASTNode* root);
 
 // Helper function to add statement to list
 void add_statement(StatementListNode* list, ASTNode* stmt);
+
+void print_ast(ASTNode* node, int indent);
 
 #endif // AST_H

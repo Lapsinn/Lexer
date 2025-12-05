@@ -15,10 +15,12 @@ int lex(Lexer *lexer) {
     while (*lexer->cur_tok != '\0') {
       //  printf("Current char: '%c'\n", *lexer->cur_tok);
         switch (*lexer->cur_tok) {
-            case ' ':
-            lexer->cur_tok++;
-            continue;
-            
+        case ' ':
+        case '\t': 
+        case '\r': 
+                lexer->cur_tok++;
+                continue;
+
         case '\n':
             lexer->line_number++;
             lexer->line_start = lexer->cur_tok + 1;
@@ -253,7 +255,6 @@ int lex(Lexer *lexer) {
 
         case '\'': {
             lexer->cur_tok++;
-            char *char_start = lexer->cur_tok;
             Token token_type = TOKEN_CHAR_LIT;
             
             if (*lexer->cur_tok == '\0' || *lexer->cur_tok == '\n') {
@@ -315,7 +316,7 @@ int lex(Lexer *lexer) {
     return 0;
 }
 
-static void add_token(Lexer *lexer, Token type, char *val, int malloced) {
+void add_token(Lexer *lexer, Token type, char *val, int malloced) {
     if (lexer->token_count == lexer->capacity) {
         size_t new_capacity = lexer->capacity == 0 ? 8 : lexer->capacity * 2;
         lexer->tokens = (TokenData *)realloc(lexer->tokens, new_capacity * sizeof(TokenData));
@@ -338,25 +339,24 @@ static void add_token(Lexer *lexer, Token type, char *val, int malloced) {
     lexer->token_count++;
 }
 
-static void handle_identifier(Lexer *lexer) {
+void handle_identifier(Lexer *lexer) {
     char *str_start = lexer->cur_tok;
+    lexer->cur_tok++;
+    
 
-    // everything except the first character can be a number
-    if(*str_start == '_') {
-        lexer->cur_tok++;
-    }
-
-    while (isalnum(*lexer->cur_tok) || *lexer->cur_tok == '_') {
-    //    printf("Current char in identifier: '%c'\n", *lexer->cur_tok); // Debugging line
+    while (*lexer->cur_tok != '\0' && (isalnum(*lexer->cur_tok) || *lexer->cur_tok == '_')) {
+        //printf("Current char in identifier: '%c'\n", *lexer->cur_tok); // Debugging line
         lexer->cur_tok++;
     } 
+    //printf("\n"); // Debugging line
 
+    /*
     char *last_consumed_char_ptr = lexer->cur_tok - 1;
     if (*last_consumed_char_ptr == '_') {
         // Truncate the word: leave the invalid '_' for the next token.
         lexer->cur_tok--; 
     }
-
+    */
     int str_len = lexer->cur_tok - str_start;
     Token keyword_token = handle_keyword(str_start, str_len);
     
@@ -393,10 +393,9 @@ void handle_number_token(Lexer *lexer) {
     }
     
  
-    while (isdigit(*lexer->cur_tok) || *lexer->cur_tok == '.') {
+    while (isdigit(*lexer->cur_tok) || (*lexer->cur_tok == '.' && *lexer->cur_tok != '\0')) { 
         if (*lexer->cur_tok == '.') {
             if (++decimal_count > 1) {
-                // We've found the second decimal point.
                 is_valid = 0; 
                 fprintf(stderr, "%zu: Error: Invalid number format — multiple decimal points\n", 
                                  lexer->line_number);
@@ -406,10 +405,10 @@ void handle_number_token(Lexer *lexer) {
         lexer->cur_tok++;
     }
 
-    //Recovery
+    // Recovery Block: Also check for NULL terminator here!
     if (!is_valid) {
         // CRITICAL: Consume the remaining garbage as part of the INVALID token's lexeme
-        while (isalnum(*lexer->cur_tok) || *lexer->cur_tok == '.') {
+        while ((isalnum(*lexer->cur_tok) || *lexer->cur_tok == '.') && *lexer->cur_tok != '\0') { // <-- ADD NULL CHECK
             lexer->cur_tok++;
         }
     }
@@ -429,9 +428,9 @@ void handle_number_token(Lexer *lexer) {
     if (!is_valid) {
         token_type = INVALID;
     } else if (decimal_count >= 1) {
-        token_type = TOKEN_DECIMAL; // Floating point number
+        token_type = TOKEN_FLOAT; // Floating point number
     } else {
-        token_type = TOKEN_NUMBER; // Integer number
+        token_type = TOKEN_INTEGER; // Integer number
     }
 
     add_token(lexer, token_type, number_str, 1);
@@ -481,7 +480,7 @@ Token handle_keyword(const char *input_word, size_t word_length) {
     return TOKEN_IDENTIFIER;
 }
 
-static void str_to_lower(char *str) {
+void str_to_lower(char *str) {
     for (char *p = str; *p; p++) {
         *p = tolower((unsigned char)*p);
     }
@@ -496,26 +495,6 @@ void free_lexer(Lexer *lexer) {
         }
     }
     free(lexer->tokens);
-}
-
-void printLexerTokens(const Lexer *lexer) {
-    
-    printf("\n\n--------------------------------\n");
-    printf("| %-20s | %-15s |\n", "Lexeme", "Token");
-    printf("--------------------------------\n");
-
- 
-    for (size_t i = 0; i < lexer->token_count; i++) {
-        const TokenData *token = &lexer->tokens[i];
-        
-        // Get the printable name for the token type
-        const char *token_name = token_type_to_string(token->type);
-
-        // Print the lexeme and the token name
-        printf("| %-20s | %-15s |\n", token->val, token_name);
-    }
-    
-    printf("--------------------------------\n");
 }
 
 
@@ -539,7 +518,7 @@ const StateNode MACHINE_DEF[NUM_STATES] = {
     [S_B] = {S_B, TOKEN_NONE, {{'o', S_BO}, {DEFAULT_CHAR, S_IDENT}}, 2},
     [S_BO] = {S_BO, TOKEN_NONE, {{'o', S_BOO}, {DEFAULT_CHAR, S_IDENT}}, 2},
     [S_BOO] = {S_BOO, TOKEN_NONE, {{'l', S_BOOL}, {DEFAULT_CHAR, S_IDENT}}, 2},
-    [S_BOOL] = {S_BOOL, BOOL, {{DEFAULT_CHAR, S_IDENT}}, 1},
+    [S_BOOL] = {S_BOOL, TOKEN_BOOL, {{DEFAULT_CHAR, S_IDENT}}, 1},
 
     [S_C] = {S_C, TOKEN_NONE, {{'o', S_CO}, {DEFAULT_CHAR, S_IDENT}}, 2},
     [S_CO] = {S_CO, TOKEN_NONE, {{'n', S_CON}, {DEFAULT_CHAR, S_IDENT}}, 2},
@@ -687,6 +666,26 @@ const StateNode* get_node(State s) {
     return NULL; 
 }
 
+void printLexerTokens(const Lexer *lexer) {
+    
+    printf("\n\n--------------------------------\n");
+    printf("| %-20s | %-15s |\n", "Lexeme", "Token");
+    printf("--------------------------------\n");
+
+ 
+    for (size_t i = 0; i < lexer->token_count; i++) {
+        const TokenData *token = &lexer->tokens[i];
+        
+        // Get the printable name for the token type
+        const char *token_name = token_type_to_string(token->type);
+
+        // Print the lexeme and the token name
+        printf("| %-20s | %-15s |\n", token->val, token_name);
+    }
+    
+    printf("--------------------------------\n");
+}
+
 
 const char *token_type_to_string(Token type) {
     switch (type) {
@@ -703,10 +702,12 @@ const char *token_type_to_string(Token type) {
         case TOKEN_NULL:            return "TOKEN_NULL";
         case TOKEN_SIZEOF:          return "TOKEN_SIZEOF";
         case TOKEN_RETURN:          return "TOKEN_RETURN";
-        case BOOL:                 return "BOOL";
+        case TOKEN_BOOL:            return "TOKEN_BOOL";
      
         case TOKEN_STR_LIT:         return "TOKEN_STR_LIT";
         case TOKEN_CHAR_LIT:        return "TOKEN_CHAR_LIT";
+        case TOKEN_INTEGER:         return "TOKEN_INTEGER";
+        case TOKEN_FLOAT:           return "TOKEN_FLOAT";
         case TOKEN_COLON:           return "TOKEN_COLON";
         case TOKEN_DOT:             return "TOKEN_DOT";
       
@@ -748,11 +749,6 @@ const char *token_type_to_string(Token type) {
         case TOKEN_MOD:             return "TOKEN_MOD";
         case TOKEN_IDIV:            return "TOKEN_IDIV";
         case TOKEN_POW:             return "TOKEN_POW";
-        
-        case TOKEN_POS:             return "TOKEN_POS";
-        case TOKEN_NEG:             return "TOKEN_NEG";
-        case TOKEN_NEXT:            return "TOKEN_NEXT";
-        case TOKEN_PREV:            return "TOKEN_PREV";
         
         case TOKEN_IS:              return "TOKEN_IS";
         case TOKEN_ISNT:            return "TOKEN_ISNT";

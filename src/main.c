@@ -1,8 +1,10 @@
+#include "ast.h"
+#include "lexer.h"
+#include "parser.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "lexer.h"
-#include "parser.h"
+
 
 int main(int argc, char *argv[]) {
     // Check for correct number of arguments
@@ -35,7 +37,7 @@ int main(int argc, char *argv[]) {
     rewind(file);
 
     // Allocate buffer
-    char *buffer = (char *)malloc(file_size + 1);
+    char *buffer = (char *)calloc(file_size + 1, sizeof(char));
     if (!buffer) {
         perror("Error allocating memory");
         fclose(file);
@@ -56,15 +58,70 @@ int main(int argc, char *argv[]) {
     // Call the lex function (to be implemented)
     int result = lex(&lexer);
 
-    if (result == 0) {
-        printf("Lexing successful\n");
-        printLexerTokens(&lexer);
-    } else {
+    if (result != 0) {
         printf("Lexing failed\n");
+        free(buffer);
+        free_lexer(&lexer);
+        return 1;
     }
 
-    // Free the buffer
-    free(buffer);
+    printf("Lexing successful!\n");
+    printf("Total tokens: %zu\n\n", lexer.token_count);
+    printLexerTokens(&lexer);
+
+    printf("\n=================================\n");
+    printf("  SYNTAX ANALYSIS (PARSING)\n");
+    printf("=================================\n");
+
+    // Initialize parser with lexer tokens
+    Parser parser;
+    parser.tokens = lexer.tokens;
+    parser.current = 0;
+    parser.count = lexer.token_count;
+    parser.has_error = 0;
+
+    // Parse the program
+    ASTNode* program = parse_program(&parser);
+
+    if (parser.has_error || !program) {
+        printf("\n[PARSING FAILED]\n");
+        printf("Syntax errors detected. Cannot generate AST.\n");
+        
+        if (program) {
+            free_ast(program);
+        }
+        free(buffer);
+        free_lexer(&lexer);
+        return 1;
+    }
+
+    printf("[PARSING SUCCESS]\n");
+    printf("Successfully parsed the program!\n\n");
+
+    printf("=================================\n");
+    printf("  ABSTRACT SYNTAX TREE (AST)\n");
+    printf("=================================\n\n");
+
+    // Print the AST
+    print_ast(program, 0);
+
+    printf("\n=================================\n");
+    printf("  CLEANUP\n");
+    printf("=================================\n");
+
+    // Free resources
+    free_ast(program);
+    printf("AST freed successfully\n");
+    
     free_lexer(&lexer);
+    printf("Lexer freed successfully\n");
+    
+    free(buffer);
+    printf("Buffer freed successfully\n");
+
+    printf("\n=================================\n");
+    printf("  COMPILATION COMPLETE\n");
+    printf("=================================\n");
+
     return 0;
 }

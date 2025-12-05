@@ -1,56 +1,98 @@
 start
-
-    # Declaration Statements (Data Types) 
-    number Num1 = 10;
-    decimal dval = 1.5;
-    letter char = 'A';
-    word w_msg = "Test";
-
-    # Value Setting Operators 
-    num1 += 5; 
-    num1 -= 2;
-    num1 *= 3;
-    num1 /= 4;
-    num1 %= 2;
-
-    # Logic Operators
-    show w_msg;
-    num1 = ask();
+    number x = 10;
+    number y = 5;
+    decimal result = 0.0;
     
-    if (num1 > 5 && num1 <= 10) { 
-        # Math Operators 
-        number result = num1 + 2
-        number result = num1 - 1 
-        number result = num1 * 3 
-        number result = num1 / 2 
-        number result = num1 % 1 
-        number result = num1 ~ 1 
-        number result = num1 ^ 2;
-
-        # Control Flow Keywords 
-        repeat 5 times { 
-            if result == 0 { 
-                stop; 
-            }
-            if (result != 10) {
-                continue;
-            }
+    result = x + y * 2;
+    show(result);
+    
+    show("The value of x is: ");
+    show(x);
+    
+    number a = 20;
+    number b = 3;
+    decimal division = a / b;
+    show(division);
+    
+    number power = 2 ^ 8;
+    show(power);
+    
+    number modulo = 17 % 5;
+    show(modulo);
+    
+    if x > 5
+    {
+        show("x is greater than 5");
+    }
+    else
+    {
+        show("x is not greater than 5");
+    }
+    
+    if y <= 10
+    {
+        show("y is less than or equal to 10");
+    }
+    
+    if a >= 15 && b < 5
+    {
+        show("Both conditions are true");
+    }
+    
+    if x == 10 || y == 3
+    {
+        show("At least one condition is true");
+    }
+    
+    repeat(number i = 0; i < 5; i += 1)
+    {
+        show(i);
+    }
+    
+    repeat(number i = 0; i < 10; i += 1)
+    {
+        if i == 5
+        {
+            stop;
         }
-    } 
-    else if (num1 <= 5 or num1 > 10) {
-        show "Condition failed.";
-    }
-
-    # Second Loop Example
-    while (num1 < 10) { 
-        num1++;
-    }
-
-    # Final Keywords
-    else {
-        show "Final check.";
+        
+        if i == 2
+        {
+            continue;
+        }
+        
+        show(i);
     }
     
-    exit; 
-
+    repeat(number row = 1; row <= 3; row += 1)
+    {
+        repeat(number col = 1; col <= 2; col += 1)
+        {
+            show(row);
+            show(col);
+        }
+    }
+    
+    number var1 = 100;
+    number var2 = 200;
+    decimal total = var1 + var2;
+    show(total);
+    
+    decimal price = 50.00;
+    price += 10.50;
+    show(price);
+    
+    price -= 5.25;
+    show(price);
+    
+    price *= 2;
+    show(price);
+    
+    price /= 3;
+    show(price);
+    
+    decimal complex = (10 + 5) * (3 - 1);
+    show(complex);
+    
+    show("Program completed successfully");
 end
