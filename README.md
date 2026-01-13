@@ -82,6 +82,3 @@ The parser implements **Panic Mode Recovery**. If a syntax error is encountered,
 2. Synchronize its state by skipping tokens until it finds a statement boundary (like `;` or `}`).
 3. Continue parsing the rest of the file to report any further errors.
 
-```
-
-```
