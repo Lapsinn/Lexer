@@ -1,4 +1,3 @@
-Here is the complete content in a single block that you can copy and paste directly into a file named `README.md`.
 
 ```markdown
 # EC Language Compiler Frontend
