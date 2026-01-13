@@ -1,5 +1,5 @@
 
-```markdown
+
 # EC Language Compiler Frontend
 
 A C-based compiler frontend for the `.ec` programming language. This project includes a Lexer for tokenization and a Recursive Descent Parser that constructs an Abstract Syntax Tree (AST).
