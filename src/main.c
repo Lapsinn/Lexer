@@ -1,127 +1,186 @@
-#include "ast.h"
-#include "lexer.h"
-#include "parser.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "lexer.h"
+#include "parse.h"
+#include "ast.h"
 
-int main(int argc, char *argv[]) {
-    // Check for correct number of arguments
-    if (argc < 2) {
-        printf("Usage: %s <filename>\n", argv[0]);
-        return 1;
-    }
+// ============================================================================
+// Configuration & Enums
+// ============================================================================
 
-    // Check the file extension 
-    const char *filename = argv[1];
-    int len = strlen(filename);
-    
-    // Check if the length is at least 3 
-    // AND if the last 3 characters are ".ec"
-    if (len < 3 || strcmp(filename + len - 3, ".ec") != 0) {
-        fprintf(stderr, "Error: File must have the .ec extension (e.g., sample.ec).\n");
-        return 1;
-    }
+typedef enum {
+    MODE_LEXER,
+    MODE_PARSER
+} CompilerMode;
 
-    // Open the file
-    FILE *file = fopen(filename, "r");
-    if (!file) {
+// ============================================================================
+// File Utilities
+// ============================================================================
+
+static int has_ec_extension(const char* filename) {
+    if (!filename) return 0;
+    size_t len = strlen(filename);
+    return len >= 3 && strcmp(filename + len - 3, ".ec") == 0;
+}
+
+static char* read_file(const char* filename) {
+    FILE* f = fopen(filename, "rb");
+    if (!f) {
         perror("Error opening file");
+        return NULL;
+    }
+
+    if (fseek(f, 0, SEEK_END) != 0) {
+        perror("Error checking file size");
+        fclose(f);
+        return NULL;
+    }
+
+    long size = ftell(f);
+    if (size < 0) {
+        perror("Error checking file size");
+        fclose(f);
+        return NULL;
+    }
+    rewind(f);
+
+    char* buf = (char*)malloc((size_t)size + 1);
+    if (!buf) {
+        fprintf(stderr, "Error: Memory allocation failed for file buffer\n");
+        fclose(f);
+        return NULL;
+    }
+
+    size_t n = fread(buf, 1, (size_t)size, f);
+    if (n < (size_t)size) {
+        fprintf(stderr, "Error: Failed to read entire file\n");
+        free(buf);
+        fclose(f);
+        return NULL;
+    }
+    fclose(f);
+
+    buf[n] = '\0';
+    return buf;
+}
+
+void print_usage(const char* prog_name) {
+    fprintf(stderr, "Usage: %s <input.ec> <output.txt> [options]\n", prog_name);
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr, "  -l, --lexer    Run lexer only (prints tokens)\n");
+    fprintf(stderr, "  -p, --parser   Run parser (prints AST) [Default]\n");
+}
+
+// ============================================================================
+// Main Execution
+// ============================================================================
+
+int main(int argc, char* argv[]) {
+    if (argc < 3) {
+        print_usage(argv[0]);
         return 1;
     }
 
-    // Get file size
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
-    rewind(file);
+    const char* input_path = argv[1];
+    const char* output_path = argv[2];
+    CompilerMode mode = MODE_PARSER; // Default behavior
 
-    // Allocate buffer
-    char *buffer = (char *)calloc(file_size + 1, sizeof(char));
-    if (!buffer) {
-        perror("Error allocating memory");
-        fclose(file);
-        return 1;
-    }
-    
-    Lexer lexer = {
-        .start_tok = buffer, 
-        .cur_tok = buffer, 
-        .line_start = buffer,
-    };
-
-    // read the file into the buffer
-    fread(buffer, 1, file_size, file);
-    buffer[file_size] = '\0'; // Null-terminate the string
-    fclose(file);
-
-    // Call the lex function (to be implemented)
-    int result = lex(&lexer);
-
-    if (result != 0) {
-        printf("Lexing failed\n");
-        free(buffer);
-        free_lexer(&lexer);
-        return 1;
-    }
-
-    printf("Lexing successful!\n");
-    printf("Total tokens: %zu\n\n", lexer.token_count);
-    printLexerTokens(&lexer);
-
-    printf("\n=================================\n");
-    printf("  SYNTAX ANALYSIS (PARSING)\n");
-    printf("=================================\n");
-
-    // Initialize parser with lexer tokens
-    Parser parser;
-    parser.tokens = lexer.tokens;
-    parser.current = 0;
-    parser.count = lexer.token_count;
-    parser.has_error = 0;
-
-    // Parse the program
-    ASTNode* program = parse_program(&parser);
-
-    if (parser.has_error || !program) {
-        printf("\n[PARSING FAILED]\n");
-        printf("Syntax errors detected. Cannot generate AST.\n");
-        
-        if (program) {
-            free_ast(program);
+    // Parse optional arguments
+    for (int i = 3; i < argc; i++) {
+        if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--lexer") == 0) {
+            mode = MODE_LEXER;
+        } else if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--parser") == 0) {
+            mode = MODE_PARSER;
+        } else {
+            fprintf(stderr, "Warning: Unknown option '%s'\n", argv[i]);
         }
-        free(buffer);
+    }
+
+    // Validate Input Extension
+    if (!has_ec_extension(input_path)) {
+        fprintf(stderr, "Error: Input file must have .ec extension\n");
+        return 1;
+    }
+
+    // Read Source
+    char* source = read_file(input_path);
+    if (!source) {
+        return 1;
+    }
+
+    // Initialize Lexer
+    Lexer lexer;
+    // Zero-init the struct to be safe
+    memset(&lexer, 0, sizeof(Lexer));
+    
+    lexer.start_tok  = source;
+    lexer.cur_tok    = source;
+    lexer.line_start = source;
+    lexer.line_number = 1;
+    lexer.token_count = 0;
+    lexer.capacity = 0;
+    lexer.tokens = NULL; 
+
+    // Run Lexer (Phase 1)
+    // We run this regardless of mode, as Parser needs tokens.
+    if (lex(&lexer) != 0) {
+        fprintf(stderr, "Fatal Error: Lexing failed.\n");
+        free(source);
         free_lexer(&lexer);
         return 1;
     }
 
-    printf("[PARSING SUCCESS]\n");
-    printf("Successfully parsed the program!\n\n");
+    // Redirect stdout to the output file
+    // This allows existing print functions (printLexerTokens, print_ast) to work unchanged.
+    if (freopen(output_path, "w", stdout) == NULL) {
+        fprintf(stderr, "Error: Could not open output file '%s' for writing.\n", output_path);
+        free(source);
+        free_lexer(&lexer);
+        return 1;
+    }
 
-    printf("=================================\n");
-    printf("  ABSTRACT SYNTAX TREE (AST)\n");
-    printf("=================================\n\n");
+    // Execute Mode Logic
+    if (mode == MODE_LEXER) {
+        printf("=== Lexer Output ===\n");
+        printf("Source File: %s\n", input_path);
+        printf("Token Count: %zu\n\n", lexer.token_count);
+        printLexerTokens(&lexer);
+    } 
+    else {
+        // MODE_PARSER
+        printf("=== Parser Output (AST) ===\n");
+        printf("Source File: %s\n\n", input_path);
 
-    // Print the AST
-    print_ast(program, 0);
+        Parser* parser = parser_create(lexer.tokens, lexer.token_count);
+        if (!parser) {
+            // Should theoretically not happen unless malloc fails
+            fprintf(stderr, "Fatal Error: Failed to create parser.\n");
+            fclose(stdout); // Close file handle
+            free(source);
+            free_lexer(&lexer);
+            return 1;
+        }
 
-    printf("\n=================================\n");
-    printf("  CLEANUP\n");
-    printf("=================================\n");
+        ASTNode* program = parse_program(parser);
 
-    // Free resources
-    free_ast(program);
-    printf("AST freed successfully\n");
-    
+        if (program && !parser->has_error) {
+            printf("Parsing Status: SUCCESS\n\n");
+            print_ast(program, 0);
+        } else {
+            printf("Parsing Status: FAILED\n");
+            printf("Check console (stderr) for syntax error details.\n");
+        }
+
+        if (program) free_ast(program);
+        parser_destroy(parser);
+    }
+
+    // Cleanup
+    fclose(stdout); // Close output file
     free_lexer(&lexer);
-    printf("Lexer freed successfully\n");
-    
-    free(buffer);
-    printf("Buffer freed successfully\n");
-
-    printf("\n=================================\n");
-    printf("  COMPILATION COMPLETE\n");
-    printf("=================================\n");
+    free(source);
 
     return 0;
 }

@@ -68,8 +68,17 @@ int lex(Lexer *lexer) {
             continue; 
 
         case '#':
-            while (*lexer->cur_tok != '\n' && *lexer->cur_tok != '\0') lexer->cur_tok++;
-            continue; 
+            // Skip until end of line
+            while (*lexer->cur_tok != '\n' && *lexer->cur_tok != '\0') {
+                lexer->cur_tok++;
+            }
+            // Increment line number and update line_start 
+            if (*lexer->cur_tok == '\n') {
+                lexer->line_number++;
+                lexer->line_start = lexer->cur_tok + 1;
+                lexer->cur_tok++;
+            }
+            continue;
 
         case ':':
             add_token(lexer, TOKEN_COLON, ":", 0);
@@ -230,8 +239,13 @@ int lex(Lexer *lexer) {
             Token token_type = TOKEN_STR_LIT;
 
             while (*lexer->cur_tok != '"' && *lexer->cur_tok != '\0') {
+                if (*lexer->cur_tok == '\n') {
+                    lexer->line_number++;
+                    lexer->line_start = lexer->cur_tok + 1;
+                }
                 lexer->cur_tok++;
             }
+
 
             if (*lexer->cur_tok == '\0') {
                 fprintf(stderr, "%zu: Error: Missing closing quote for string literal.\n", lexer->line_number);
@@ -503,8 +517,9 @@ const StateNode MACHINE_DEF[NUM_STATES] = {
         {'a', S_A}, {'o', S_O}, {'n', S_N}, {'s', S_S}, {'e', S_E}, 
         {'c', S_C}, {'i', S_I}, {'w', S_W}, {'l', S_L}, {'m', S_M},
         {'t', S_T}, {'f', S_F}, {'r', S_R}, {'d', S_D}, {'g', S_G},
+        {'b', S_B},
         {DEFAULT_CHAR, S_IDENT} // Explicit Default Transition
-    }, 17}, 
+    }, 18}, 
 
     [S_A] = {S_A, TOKEN_NONE, {{'n', S_AN}, {'s', S_AS}, {'l', S_AL}, {DEFAULT_CHAR, S_IDENT}}, 4},
     [S_AN] = {S_AN, TOKEN_NONE, {{'d', S_AND}, {DEFAULT_CHAR, S_IDENT}}, 2},
@@ -668,9 +683,9 @@ const StateNode* get_node(State s) {
 
 void printLexerTokens(const Lexer *lexer) {
     
-    printf("\n\n--------------------------------\n");
+    printf("\n\n------------------------------------------\n");
     printf("| %-20s | %-15s |\n", "Lexeme", "Token");
-    printf("--------------------------------\n");
+    printf("------------------------------------------\n");
 
  
     for (size_t i = 0; i < lexer->token_count; i++) {
@@ -682,8 +697,8 @@ void printLexerTokens(const Lexer *lexer) {
         // Print the lexeme and the token name
         printf("| %-20s | %-15s |\n", token->val, token_name);
     }
-    
-    printf("--------------------------------\n");
+
+    printf("------------------------------------------\n");
 }
 
 
@@ -756,6 +771,13 @@ const char *token_type_to_string(Token type) {
         case TOKEN_LESS:            return "TOKEN_LESS";
         case TOKEN_GREATEREQUAL:    return "TOKEN_GREATEREQUAL";
         case TOKEN_LESSEQUAL:       return "TOKEN_LESSEQUAL";
+
+        case TOKEN_PLUS_EQUAL:      return "TOKEN_PLUS_EQUAL";
+        case TOKEN_MINUS_EQUAL:     return "TOKEN_MINUS_EQUAL";
+        case TOKEN_MUL_EQUAL:       return "TOKEN_MUL_EQUAL";
+        case TOKEN_DIV_EQUAL:       return "TOKEN_DIV_EQUAL";
+        case TOKEN_MOD_EQUAL:       return "TOKEN_MOD_EQUAL";
+        case TOKEN_IDIV_EQUAL:      return "TOKEN_IDIV_EQUAL";
     
         case TOKEN_AND:             return "TOKEN_AND";
         case TOKEN_OR:              return "TOKEN_OR";
