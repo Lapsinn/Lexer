@@ -33,7 +33,7 @@ void parser_destroy(Parser* parser) {
 int is_at_end(Parser* parser) {
     if (!parser) return 1;
     return parser->current >= parser->count || 
-           parser->tokens[parser->current].type == TOKEN_END; 
+           parser->tokens[parser->current].type == TOKEN_EOF; 
 }
 
 TokenData peek(Parser* parser) {
@@ -58,20 +58,20 @@ TokenData previous(Parser* parser) {
     return parser->tokens[parser->current - 1];
 }
 
-void consume_token(Parser* parser) {
-    if (!is_at_end(parser) || peek(parser).type == TOKEN_END) {
+void read_token(Parser* parser) {
+    if (!is_at_end(parser)) {
         parser->current++;
     }
 }
 
 int check(Parser* parser, Token type) {
-    if (is_at_end(parser) && type != TOKEN_END) return 0;
+    if (is_at_end(parser)) return 0;
     return peek(parser).type == type;
 }
 
 int expect(Parser* parser, Token type, const char* message) {
     if (check(parser, type)) {
-        consume_token(parser);
+        read_token(parser);
         return 1;
     }
     error(parser, message);
@@ -119,7 +119,7 @@ void synchronize(Parser* parser) {
         if (previous(parser).type == TOKEN_SEMICOLON) return;
         if (previous(parser).type == TOKEN_RBRACE) return;
         if (is_statement_start(peek(parser).type)) return;
-        consume_token(parser);
+        read_token(parser);
     }
 }
 
@@ -133,7 +133,7 @@ ASTNode* parse_value(Parser* parser) {
     TokenData t = peek(parser);
     
     if (t.type == TOKEN_IDENTIFIER) {
-        consume_token(parser);
+        read_token(parser);
         IdentifierNode* id = (IdentifierNode*)malloc(sizeof(IdentifierNode));
         id->name = strdup(t.val);
         return create_node_with_loc(NODE_IDENTIFIER, id, t);
@@ -145,36 +145,36 @@ ASTNode* parse_value(Parser* parser) {
         case TOKEN_INTEGER:
             lit->literal_type = LITERAL_NUMBER;
             lit->value.int_value = atoi(t.val);
-            consume_token(parser);
+            read_token(parser);
             break;
         case TOKEN_FLOAT:
             lit->literal_type = LITERAL_DECIMAL;
             lit->value.double_value = atof(t.val);
-            consume_token(parser);
+            read_token(parser);
             break;
         case TOKEN_STR_LIT:
             lit->literal_type = LITERAL_STRING;
             lit->value.string_value = strdup(t.val);
-            consume_token(parser);
+            read_token(parser);
             break;
         case TOKEN_CHAR_LIT:
             lit->literal_type = LITERAL_CHAR;
             lit->value.char_value = t.val[0];
-            consume_token(parser);
+            read_token(parser);
             break;
         case TOKEN_TRUE:
             lit->literal_type = LITERAL_BOOL;
             lit->value.bool_value = 1;
-            consume_token(parser);
+            read_token(parser);
             break;
         case TOKEN_FALSE:
             lit->literal_type = LITERAL_BOOL;
             lit->value.bool_value = 0;
-            consume_token(parser);
+            read_token(parser);
             break;
         case TOKEN_NULL:
             lit->literal_type = LITERAL_NULL;
-            consume_token(parser);
+            read_token(parser);
             break;
         default:
             free(lit);
@@ -203,15 +203,15 @@ ASTNode* parse_arg_list(Parser* parser) {
         }
         list->args[list->count++] = expr;
 
-    } while (check(parser, TOKEN_COMMA) && (consume_token(parser), 1));
+    } while (check(parser, TOKEN_COMMA) && (read_token(parser), 1));
 
     return create_node(NODE_ARG_LIST, list);
 }
 
 ASTNode* parse_fn_call(Parser* parser) {
     TokenData id_tok = peek(parser);
-    consume_token(parser); // ID
-    consume_token(parser); // '('
+    read_token(parser); // ID
+    read_token(parser); // '('
 
     FuncCallNode* call = (FuncCallNode*)malloc(sizeof(FuncCallNode));
     call->func_name = strdup(id_tok.val);
@@ -239,7 +239,7 @@ ASTNode* parse_fn_call(Parser* parser) {
 
 ASTNode* parse_input_expr(Parser* parser) {
     TokenData ask_tok = peek(parser);
-    consume_token(parser); // ask
+    read_token(parser); // ask
     
     if (!expect(parser, TOKEN_LPAREN, "Expected '(' after 'ask'")) return NULL;
     
@@ -249,7 +249,7 @@ ASTNode* parse_input_expr(Parser* parser) {
     }
     
     TokenData type_tok = peek(parser);
-    consume_token(parser); // Type
+    read_token(parser); // Type
     
     if (!expect(parser, TOKEN_RPAREN, "Expected ')' after type")) return NULL;
 
@@ -262,7 +262,7 @@ ASTNode* parse_input_expr(Parser* parser) {
 
 ASTNode* parse_sizeof(Parser* parser) {
     TokenData tok = peek(parser);
-    consume_token(parser); 
+    read_token(parser); 
     if (!expect(parser, TOKEN_LPAREN, "Expected '('")) return NULL;
     ASTNode* val = parse_value(parser);
     if (!val) {
@@ -279,7 +279,7 @@ ASTNode* parse_sizeof(Parser* parser) {
 
 ASTNode* parse_exp_rule(Parser* parser) {
     if (check(parser, TOKEN_LPAREN)) {
-        consume_token(parser);
+        read_token(parser);
         ASTNode* expr = parse_expr(parser);
         if (!expect(parser, TOKEN_RPAREN, "Expected ')' after expression")) return NULL;
         return expr;
@@ -306,7 +306,7 @@ ASTNode* parse_unary(Parser* parser) {
     if (check(parser, TOKEN_NOT) || check(parser, TOKEN_MIN) || check(parser, TOKEN_PLUS)) {
         TokenData op_tok = peek(parser);
         int op = map_unary_operator(op_tok.type);
-        consume_token(parser);
+        read_token(parser);
         
         ASTNode* operand = parse_unary(parser);
         UnaryExpressionNode* unop = (UnaryExpressionNode*)malloc(sizeof(UnaryExpressionNode));
@@ -322,7 +322,7 @@ ASTNode* parse_factor(Parser* parser) {
     
     if (check(parser, TOKEN_POW)) {
         TokenData op_tok = peek(parser);
-        consume_token(parser);
+        read_token(parser);
         ASTNode* right = parse_factor(parser); 
         
         BinaryExpressionNode* bin = (BinaryExpressionNode*)malloc(sizeof(BinaryExpressionNode));
@@ -341,7 +341,7 @@ ASTNode* parse_term(Parser* parser) {
            check(parser, TOKEN_MOD) || check(parser, TOKEN_IDIV)) {
         TokenData op_tok = peek(parser);
         int op = map_binary_operator(op_tok.type);
-        consume_token(parser);
+        read_token(parser);
         ASTNode* right = parse_factor(parser);
         
         BinaryExpressionNode* bin = (BinaryExpressionNode*)malloc(sizeof(BinaryExpressionNode));
@@ -359,7 +359,7 @@ ASTNode* parse_arith_expr(Parser* parser) {
     while (check(parser, TOKEN_PLUS) || check(parser, TOKEN_MIN)) {
         TokenData op_tok = peek(parser);
         int op = map_binary_operator(op_tok.type);
-        consume_token(parser);
+        read_token(parser);
         ASTNode* right = parse_term(parser);
         
         BinaryExpressionNode* bin = (BinaryExpressionNode*)malloc(sizeof(BinaryExpressionNode));
@@ -377,7 +377,7 @@ ASTNode* parse_relational(Parser* parser) {
     while (is_relational_operator(peek(parser).type)) {
         TokenData op_tok = peek(parser);
         int op = map_binary_operator(op_tok.type);
-        consume_token(parser);
+        read_token(parser);
         ASTNode* right = parse_arith_expr(parser);
         
         BinaryExpressionNode* bin = (BinaryExpressionNode*)malloc(sizeof(BinaryExpressionNode));
@@ -395,7 +395,7 @@ ASTNode* parse_equality(Parser* parser) {
     while (check(parser, TOKEN_IS) || check(parser, TOKEN_ISNT)) {
         TokenData op_tok = peek(parser);
         int op = map_binary_operator(op_tok.type);
-        consume_token(parser);
+        read_token(parser);
         ASTNode* right = parse_relational(parser);
         
         BinaryExpressionNode* bin = (BinaryExpressionNode*)malloc(sizeof(BinaryExpressionNode));
@@ -412,7 +412,7 @@ ASTNode* parse_bool_and(Parser* parser) {
     
     while (check(parser, TOKEN_AND)) {
         TokenData op_tok = peek(parser);
-        consume_token(parser);
+        read_token(parser);
         ASTNode* right = parse_equality(parser);
         
         BinaryExpressionNode* bin = (BinaryExpressionNode*)malloc(sizeof(BinaryExpressionNode));
@@ -429,7 +429,7 @@ ASTNode* parse_bool_or(Parser* parser) {
     
     while (check(parser, TOKEN_OR)) {
         TokenData op_tok = peek(parser);
-        consume_token(parser);
+        read_token(parser);
         ASTNode* right = parse_bool_and(parser);
         
         BinaryExpressionNode* bin = (BinaryExpressionNode*)malloc(sizeof(BinaryExpressionNode));
@@ -450,7 +450,7 @@ ASTNode* parse_expr(Parser* parser) {
 // ============================================================================
 
 ASTNode* parse_statement(Parser* parser);
-ASTNode* parse_stmt_list(Parser* parser);
+ASTNode* parse_stmt_list(Parser* parser, Token delimiter);
 ASTNode* parse_block(Parser* parser);
 
 ASTNode* parse_param_list(Parser* parser) {
@@ -465,7 +465,7 @@ ASTNode* parse_param_list(Parser* parser) {
             break;
         }
         char* type = strdup(peek(parser).val);
-        consume_token(parser);
+        read_token(parser);
 
         if (!check(parser, TOKEN_IDENTIFIER)) {
             error(parser, "Expected parameter name");
@@ -473,7 +473,7 @@ ASTNode* parse_param_list(Parser* parser) {
             break;
         }
         char* name = strdup(peek(parser).val);
-        consume_token(parser);
+        read_token(parser);
 
         ParameterNode* param = (ParameterNode*)malloc(sizeof(ParameterNode));
         param->param_type = type;
@@ -485,14 +485,14 @@ ASTNode* parse_param_list(Parser* parser) {
         }
         list->parameters[list->count++] = param;
 
-    } while (check(parser, TOKEN_COMMA) && (consume_token(parser), 1));
+    } while (check(parser, TOKEN_COMMA) && (read_token(parser), 1));
 
     return create_node(NODE_PARAM_LIST, list);
 }
 
 ASTNode* parse_func_decl(Parser* parser) {
     TokenData type_tok = peek(parser);
-    consume_token(parser); 
+    read_token(parser); 
     
     if (!expect(parser, TOKEN_IDENTIFIER, "Expected function name")) {
         return NULL;
@@ -532,7 +532,7 @@ ASTNode* parse_single_decl(Parser* parser, char* data_type, int is_const) {
     
     ASTNode* init = NULL;
     if (check(parser, TOKEN_ASSIGN)) {
-        consume_token(parser);
+        read_token(parser);
         init = parse_expr(parser);
     }
     
@@ -548,7 +548,7 @@ ASTNode* parse_single_decl(Parser* parser, char* data_type, int is_const) {
 ASTNode* parse_var_decl_wrapper(Parser* parser, int is_const) {
     TokenData type_tok = peek(parser);
     char* data_type = strdup(type_tok.val);
-    consume_token(parser);
+    read_token(parser);
     
     StatementListNode* list = (StatementListNode*)malloc(sizeof(StatementListNode));
     list->count = 0;
@@ -569,7 +569,7 @@ ASTNode* parse_var_decl_wrapper(Parser* parser, int is_const) {
             list->statements = (ASTNode**)realloc(list->statements, sizeof(ASTNode*) * list->capacity);
         }
         list->statements[list->count++] = decl;
-    } while (check(parser, TOKEN_COMMA) && (consume_token(parser), 1));
+    } while (check(parser, TOKEN_COMMA) && (read_token(parser), 1));
     
     free(data_type);
     
@@ -586,7 +586,7 @@ ASTNode* parse_var_decl_wrapper(Parser* parser, int is_const) {
 ASTNode* parse_decl_stmt(Parser* parser) {
     int is_const = 0;
     if (check(parser, TOKEN_CONST)) {
-        consume_token(parser);
+        read_token(parser);
         is_const = 1;
         return parse_var_decl_wrapper(parser, is_const);
     }
@@ -610,7 +610,7 @@ ASTNode* parse_decl_stmt(Parser* parser) {
 
 ASTNode* parse_ass_stmt(Parser* parser) {
     TokenData id_tok = peek(parser);
-    consume_token(parser); // ID
+    read_token(parser); // ID
     
     if (!is_assignment_operator(peek(parser).type)) {
         error(parser, "Expected assignment operator");
@@ -618,7 +618,7 @@ ASTNode* parse_ass_stmt(Parser* parser) {
     }
     
     int op = map_assign_operator(peek(parser).type);
-    consume_token(parser);
+    read_token(parser);
     
     ASTNode* expr = parse_expr(parser);
     
@@ -632,7 +632,7 @@ ASTNode* parse_ass_stmt(Parser* parser) {
 
 ASTNode* parse_input_stmt(Parser* parser) {
     TokenData id_tok = peek(parser);
-    consume_token(parser); // ID
+    read_token(parser); // ID
     
     if (!expect(parser, TOKEN_ASSIGN, "Expected '='")) return NULL;
     
@@ -647,7 +647,7 @@ ASTNode* parse_input_stmt(Parser* parser) {
 
 ASTNode* parse_output_stmt(Parser* parser) {
     TokenData tok = peek(parser);
-    consume_token(parser); // SHOW
+    read_token(parser); // SHOW
     if (!expect(parser, TOKEN_LPAREN, "Expected '('")) return NULL;
     ASTNode* expr = parse_expr(parser);
     if (!expect(parser, TOKEN_RPAREN, "Expected ')'")) return NULL;
@@ -663,7 +663,7 @@ ASTNode* parse_block(Parser* parser) {
     
     ASTNode* list = NULL;
     if (!check(parser, TOKEN_RBRACE)) {
-        list = parse_stmt_list(parser);
+        list = parse_stmt_list(parser, TOKEN_RBRACE);
     }
     
     if (!expect(parser, TOKEN_RBRACE, "Expected '}'")) return NULL;
@@ -681,12 +681,12 @@ ASTNode* parse_block(Parser* parser) {
 
 ASTNode* parse_cond_stmt(Parser* parser) {
     TokenData tok = peek(parser);
-    consume_token(parser); // IF
+    read_token(parser); // IF
     if (!expect(parser, TOKEN_LPAREN, "Expected '('")) return NULL;
     ASTNode* cond = parse_expr(parser);
     if (!expect(parser, TOKEN_RPAREN, "Expected ')'")) return NULL;
     
-    if (check(parser, TOKEN_THEN)) consume_token(parser);
+    if (check(parser, TOKEN_THEN)) read_token(parser);
     
     ASTNode* thenBody = NULL;
     if (check(parser, TOKEN_LBRACE)) {
@@ -697,7 +697,7 @@ ASTNode* parse_cond_stmt(Parser* parser) {
     
     ASTNode* elseBody = NULL;
     if (check(parser, TOKEN_ELSE)) {
-        consume_token(parser);
+        read_token(parser);
         if (check(parser, TOKEN_IF)) {
             elseBody = parse_cond_stmt(parser); 
         } else if (check(parser, TOKEN_LBRACE)) {
@@ -716,12 +716,12 @@ ASTNode* parse_cond_stmt(Parser* parser) {
 
 ASTNode* parse_iter_stmt(Parser* parser) {
     TokenData tok = peek(parser);
-    consume_token(parser); // REPEAT
+    read_token(parser); // REPEAT
     if (!expect(parser, TOKEN_LPAREN, "Expected '('")) return NULL;
     
     ASTNode* init = NULL;
     if (is_data_type(peek(parser).type) || check(parser, TOKEN_CONST)) {
-        int is_c = check(parser, TOKEN_CONST) ? (consume_token(parser), 1) : 0;
+        int is_c = check(parser, TOKEN_CONST) ? (read_token(parser), 1) : 0;
         init = parse_var_decl_wrapper(parser, is_c);
     } else {
         init = parse_ass_stmt(parser);
@@ -733,7 +733,7 @@ ASTNode* parse_iter_stmt(Parser* parser) {
     
     ASTNode* inc = parse_ass_stmt(parser);
     if (!expect(parser, TOKEN_RPAREN, "Expected ')'")) return NULL;
-    
+
     ASTNode* body = parse_block(parser);
     
     IterStmtNode* iter = (IterStmtNode*)malloc(sizeof(IterStmtNode));
@@ -746,7 +746,7 @@ ASTNode* parse_iter_stmt(Parser* parser) {
 
 ASTNode* parse_return_stmt(Parser* parser) {
     TokenData tok = peek(parser);
-    consume_token(parser);
+    read_token(parser);
     ASTNode* expr = NULL;
     if (!check(parser, TOKEN_SEMICOLON)) {
         expr = parse_expr(parser);
@@ -762,8 +762,8 @@ ASTNode* parse_simple_stmt(Parser* parser) {
     if (t == TOKEN_CONST || is_data_type(t)) return parse_decl_stmt(parser);
     if (t == TOKEN_SHOW) return parse_output_stmt(parser);
     if (t == TOKEN_RETURN) return parse_return_stmt(parser);
-    if (t == TOKEN_CONTINUE) { consume_token(parser); return create_node(NODE_CONTINUE_STMT, NULL); }
-    if (t == TOKEN_STOP) { consume_token(parser); return create_node(NODE_STOP_STMT, NULL); }
+    if (t == TOKEN_CONTINUE) { read_token(parser); return create_node(NODE_CONTINUE_STMT, NULL); }
+    if (t == TOKEN_STOP) { read_token(parser); return create_node(NODE_STOP_STMT, NULL); }
     
     if (t == TOKEN_IDENTIFIER) {
         TokenData next = peek_ahead(parser, 1);
@@ -779,7 +779,7 @@ ASTNode* parse_simple_stmt(Parser* parser) {
     
     // Safe Panic: Consume bad token so we don't loop
     error(parser, "Unknown simple statement");
-    consume_token(parser); 
+    read_token(parser); 
     return NULL;
 }
 
@@ -796,27 +796,23 @@ ASTNode* parse_statement(Parser* parser) {
     }
     
     if (check(parser, TOKEN_SEMICOLON)) {
-        consume_token(parser);
+        read_token(parser);
         return NULL; 
     }
     
     ASTNode* node = parse_simple_stmt(parser);
     
-    if (check(parser, TOKEN_SEMICOLON)) {
-        consume_token(parser);
-    } else if (node != NULL) {
-        error(parser, "Expected ';' after statement");
-    }
+    if (node) expect(parser, TOKEN_SEMICOLON, "Expected ';' after statement");
     
     return node;
 }
 
-ASTNode* parse_stmt_list(Parser* parser) {
+ASTNode* parse_stmt_list(Parser* parser, Token delimiter) {
     StatementListNode* list = (StatementListNode*)malloc(sizeof(StatementListNode));
     list->count = 0; list->capacity = 8;
     list->statements = (ASTNode**)malloc(sizeof(ASTNode*) * list->capacity);
     
-    while (!is_at_end(parser) && !check(parser, TOKEN_RBRACE) && !check(parser, TOKEN_END)) {
+    while (!is_at_end(parser) && !check(parser, delimiter)) {
         size_t start_pos = parser->current; 
         
         ASTNode* stmt = parse_statement(parser);
@@ -826,7 +822,7 @@ ASTNode* parse_stmt_list(Parser* parser) {
             if (parser->has_error) {
                 synchronize(parser);
                 if (parser->current == start_pos && !is_at_end(parser)) {
-                    consume_token(parser);
+                    read_token(parser);
                 }
             }
         }
@@ -839,9 +835,9 @@ ASTNode* parse_global_declaration(Parser* parser) {
     int is_const = 0;
     if (check(parser, TOKEN_CONST)) {
         is_const = 1;
-        consume_token(parser); 
+        read_token(parser); 
         ASTNode* node = parse_var_decl_wrapper(parser, is_const);
-        if (node) expect(parser, TOKEN_SEMICOLON, "Expected ';'");
+        if (node) expect(parser, TOKEN_SEMICOLON, "Expected ';'"); 
         return node;
     }
     
@@ -880,19 +876,19 @@ ASTNode* parse_program(Parser* parser) {
             Token t = peek(parser).type;
             int synced = 0;
             
-            // Consume until we find a semicolon (end of bad stmt) or a new start (type/const/start)
+            // Read until we find a semicolon (end of bad stmt) or a new start (type/const/start)
             while (t != TOKEN_EOF) {
                 if (t == TOKEN_SEMICOLON) {
-                    consume_token(parser); // Eat the semi
+                    read_token(parser); // Eat the semi
                     synced = 1;
                     break;
                 }
                 if (is_data_type(t) || t == TOKEN_CONST || t == TOKEN_START) {
-                    // Don't consume; let the loop retry parsing this valid token
+                    // Don't read; let the loop retry parsing this valid token
                     synced = 1;
                     break;
                 }
-                consume_token(parser);
+                read_token(parser);
                 t = peek(parser).type;
             }
             
@@ -903,8 +899,8 @@ ASTNode* parse_program(Parser* parser) {
     }
     
     expect(parser, TOKEN_START, "Expected 'start'");
-    
-    prog->stmt_list = parse_stmt_list(parser);
+
+    prog->stmt_list = parse_stmt_list(parser, TOKEN_END);
     
     expect(parser, TOKEN_END, "Expected 'end'");
     

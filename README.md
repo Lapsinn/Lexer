@@ -1,4 +1,3 @@
-Here is the complete content in a single block that you can copy and paste directly into a file named `README.md`.
 
 ```markdown
 # EC Language Compiler Frontend
@@ -24,7 +23,7 @@ project/
 ├── src/
 │   ├── main.c        # Entry point (drivers for lexer/parser)
 │   ├── lexer.c       # Tokenization implementation
-│   ├── parser.c      # Parser implementation
+│   ├── parse.c      # Parser implementation
 │   └── ast.c         # AST node definitions and helpers
 ├── sample.ec         # Sample input file
 └── README.md         # This file

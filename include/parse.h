@@ -32,7 +32,7 @@ ASTNode* parse_program(Parser* parser);
 // Grammar Functions (Exposed for testing/internal use)
 // ============================================================================
 
-ASTNode* parse_stmt_list(Parser* parser);
+ASTNode* parse_stmt_list(Parser* parser, Token delimiter);
 ASTNode* parse_statement(Parser* parser);
 ASTNode* parse_block(Parser* parser);
 
@@ -73,7 +73,7 @@ ASTNode* parse_bool_or(Parser* parser);
 // Utilities & Helpers
 // ============================================================================
 
-void consume_token(Parser* parser);
+void read_token(Parser* parser);
 TokenData peek(Parser* parser);
 TokenData peek_ahead(Parser* parser, int offset);
 int check(Parser* parser, Token type);

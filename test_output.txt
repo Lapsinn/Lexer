@@ -1,8 +1,6 @@
 === Parser Output (AST) ===
-Source File: parse_test.ec
+Source File: test.ec
 
-Parsing main program block...
- loc: line 116
 Parsing Status: SUCCESS
 
 NODE_PROGRAM (line: 0, col: 0)
@@ -86,7 +84,7 @@ NODE_PROGRAM (line: 0, col: 0)
           NODE_LITERAL (value: 2.500000) (line: 126, col: 19)
       NODE_VAR_DECL (name: "c", type: "letter", const: 0) (line: 127, col: 12)
         INIT_EXPR
-          NODE_LITERAL (value: 's') (line: 127, col: 18)
+          NODE_LITERAL (value: '1') (line: 127, col: 18)
       NODE_VAR_DECL (name: "flag", type: "bool", const: 0) (line: 128, col: 13)
         INIT_EXPR
           NODE_LITERAL (value: true) (line: 128, col: 20)
@@ -212,10 +210,6 @@ NODE_PROGRAM (line: 0, col: 0)
             NODE_LITERAL (value: 5) (line: 173, col: 10)
             NODE_LITERAL (value: 3) (line: 173, col: 14)
           NODE_LITERAL (value: 2) (line: 173, col: 18)
-      NODE_OUTPUT_STMT (line: 176, col: 8)
-        NODE_BINARY_EXPR (op: &&) (line: 176, col: 14)
-          NODE_LITERAL (value: true) (line: 176, col: 13)
-          NODE_LITERAL (value: false) (line: 176, col: 22)
       NODE_OUTPUT_STMT (line: 177, col: 8)
         NODE_BINARY_EXPR (op: ||) (line: 177, col: 14)
           NODE_LITERAL (value: true) (line: 177, col: 13)

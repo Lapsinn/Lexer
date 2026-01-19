@@ -1,3 +1,88 @@
+#keywords
+and
+ask
+bool
+const
+continue
+decimal
+else
+end
+false
+if
+letter
+not
+null
+number
+or
+repeat
+return
+show
+sizeof
+stop
+true
+while
+word
+
+#reserved_words
+exit
+goto
+import
+loop
+main
+
+#noise_words
+each
+of
+then
+also
+
+#assignment_operators
+=
++=
+-=
+*=
+/=
+%=
+~=
+
+#arithmetic_operators
++
+-
+*
+/
+%
+~
+^
+
+#comparison_operators
+==
+!=
+>
+<
+>=
+<=
+
+#logical_operators
+&&
+||
+!
+
+#special_character
+?
+:
+
+#literals
+123          
+45.67        
+"Hello"      
+'A'          
+
+#identifiers
+x
+value
+finalAnswer
+count_1
+
 # ===============================
 # Global declarations for testing
 # ===============================
@@ -116,11 +201,11 @@ start
         show("x > 5");
     } else {
         show("x <= 5");
-    };
+    }
 
     if (5 > 3 && 2 < 4) {
         show("complex condition true");
-    };
+    }
 
     if (x == 1) {
         show(1);
@@ -128,33 +213,33 @@ start
         show(2);
     } else {
         show(3);
-    };
+    }
 
     if (true) {
         show("block if works");
-    };
+    }
 
     if (true) show("single statement if");
 
     # Test 10: repeat loops
     repeat(number i = 0; i < 3; i += 1) {
         show(i);
-    };
+    }
 
     number j = 0;
     repeat(j = 0; j < 3; j += 1) {
         show(j);
-    };
+    }
 
     repeat(number k = 0; k < 5 && k != 3; k += 1) {
         show(k);
-    };
+    }
 
     repeat(number a = 0; a < 2; a += 1) {
         repeat(number b = 0; b < 2; b += 1) {
             show(a);
-        };
-    };
+        }
+    }
 
     # Test 11: continue and stop
     repeat(number m = 0; m < 5; m += 1) {
