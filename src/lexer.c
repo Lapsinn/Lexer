@@ -8,12 +8,8 @@
 
 #define DEFAULT_CHAR '\0'
 
-//to do assigment operators
-//add boolean
-//else  if
 int lex(Lexer *lexer) {
     while (*lexer->cur_tok != '\0') {
-      //  printf("Current char: '%c'\n", *lexer->cur_tok);
         switch (*lexer->cur_tok) {
         case ' ':
         case '\t': 
@@ -359,18 +355,8 @@ void handle_identifier(Lexer *lexer) {
     
 
     while (*lexer->cur_tok != '\0' && (isalnum(*lexer->cur_tok) || *lexer->cur_tok == '_')) {
-        //printf("Current char in identifier: '%c'\n", *lexer->cur_tok); // Debugging line
         lexer->cur_tok++;
     } 
-    //printf("\n"); // Debugging line
-
-    /*
-    char *last_consumed_char_ptr = lexer->cur_tok - 1;
-    if (*last_consumed_char_ptr == '_') {
-        // Truncate the word: leave the invalid '_' for the next token.
-        lexer->cur_tok--; 
-    }
-    */
     int str_len = lexer->cur_tok - str_start;
     Token keyword_token = handle_keyword(str_start, str_len);
     
@@ -384,7 +370,6 @@ void handle_identifier(Lexer *lexer) {
     identifier[str_len] = '\0';
     str_to_lower(identifier);
 
-    //printf("Identified identifier: '%s'\n", identifier); // Debugging line
     if (keyword_token != TOKEN_IDENTIFIER) {
 
         add_token(lexer, keyword_token, identifier, 1);
@@ -421,8 +406,8 @@ void handle_number_token(Lexer *lexer) {
 
     // Recovery Block: Also check for NULL terminator here!
     if (!is_valid) {
-        // CRITICAL: Consume the remaining garbage as part of the INVALID token's lexeme
-        while ((isalnum(*lexer->cur_tok) || *lexer->cur_tok == '.') && *lexer->cur_tok != '\0') { // <-- ADD NULL CHECK
+        // Consume the remaining garbage as part of the INVALID token's lexeme
+        while ((isalnum(*lexer->cur_tok) || *lexer->cur_tok == '.') && *lexer->cur_tok != '\0') { 
             lexer->cur_tok++;
         }
     }
