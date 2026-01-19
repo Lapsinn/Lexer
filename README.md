@@ -1,5 +1,5 @@
 
-```markdown
+
 # EC Language Compiler Frontend
 
 A C-based compiler frontend for the `.ec` programming language. This project includes a Lexer for tokenization and a Recursive Descent Parser that constructs an Abstract Syntax Tree (AST).
@@ -82,6 +82,3 @@ The parser implements **Panic Mode Recovery**. If a syntax error is encountered,
 2. Synchronize its state by skipping tokens until it finds a statement boundary (like `;` or `}`).
 3. Continue parsing the rest of the file to report any further errors.
 
-```
-
-```
