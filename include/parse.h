@@ -51,7 +51,7 @@ ASTNode* parse_input_stmt(Parser* parser);
 ASTNode* parse_output_stmt(Parser* parser);
 ASTNode* parse_cond_stmt(Parser* parser);
 ASTNode* parse_iter_stmt(Parser* parser);
-ASTNode* parse_while_stmt(Parser* parser)
+ASTNode* parse_while_stmt(Parser* parser);
 ASTNode* parse_return_stmt(Parser* parser);
 
 // Expressions
