@@ -1,87 +1,3 @@
-#keywords
-and
-ask
-bool
-const
-continue
-decimal
-else
-end
-false
-if
-letter
-not
-null
-number
-or
-repeat
-return
-show
-sizeof
-stop
-true
-while
-word
-
-#reserved_words
-exit
-goto
-import
-loop
-main
-
-#noise_words
-each
-of
-then
-also
-
-#assignment_operators
-=
-+=
--=
-*=
-/=
-%=
-~=
-
-#arithmetic_operators
-+
--
-*
-/
-%
-~
-^
-
-#comparison_operators
-==
-!=
->
-<
->=
-<=
-
-#logical_operators
-&&
-||
-!
-
-#special_character
-?
-:
-
-#literals
-123          
-45.67        
-"Hello"      
-'A'          
-
-#identifiers
-x
-value
-finalAnswer
-count_1
 
 # ===============================
 # Global declarations for testing
@@ -89,6 +5,8 @@ count_1
 
 const number PI = 3.14159;
 number global_x = 10;
+bool check
+number a,b,c = 2;
 
 number add(number a, number b) {
     return a + b;
@@ -127,21 +45,19 @@ start
     letter c = 'z';
     bool flag = true;
 
-    show(x);
     x += 3;
-    show(x);
-
     x -= 2;
-    show(x);
-
     x *= 4;
-    show(x);
-
     x /= 2;
-    show(x);
-
     x %= 5;
-    show(x);
+
+    z = 2 + 3 * 4;
+    z = 2 * 3 + 4;
+    z = 2 * 3 ^ 2;
+    z = 2 + 3 * 4 ^ 2 - 1;
+
+    y == x;
+    z = y + x;
 
     # Test 3: arithmetic expressions
     show(2 + 3);
@@ -183,15 +99,15 @@ start
     show((true || false) && true);
 
     # Test 7: SHOW with various expressions
-    show(x);
+    show();
     show(global_x);
     show(PI);
-    show(5 + 3 * 2);
-    show("Value of x:");
+    showshow(5 + 3 * 2);
+    ("Value of x:");
     show(x);
 
     # Test 8: ASK input
-    hello = ask(number);
+    hello = ask();
     hello = ask(decimal);
     hello = ask(letter);
     hello = ask(bool);
@@ -209,7 +125,7 @@ start
 
     if (x == 1) {
         show(1);
-    } else if (x == 2) {
+    } else if (x 2) {
         show(2);
     } else {
         show(3);
@@ -227,17 +143,25 @@ start
     }
 
     number j = 0;
-    repeat(j = 0; j < 3; j += 1) {
+    while (j >= 0) {
         show(j);
+        j-=1;
     }
 
     repeat(number k = 0; k < 5 && k != 3; k += 1) {
-        show(k);
+        while (j <= 0) {
+            show(j);
+            j+=1;
+        }
     }
 
     repeat(number a = 0; a < 2; a += 1) {
-        repeat(number b = 0; b < 2; b += 1) {
-            show(a);
+        while(j >= 0) 
+            repeat(number b = 0; b < 2; b += 1) {
+                show(a);
+            }   
+            show(j);
+            j-=1;
         }
     }
 
@@ -274,5 +198,4 @@ start
     repeat(number r = 0; r < t; r += 1) {
         show(r);
     };
-
 end

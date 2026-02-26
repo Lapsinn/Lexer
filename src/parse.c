@@ -103,6 +103,7 @@ int is_statement_start(Token token) {
         case TOKEN_SHOW:
         case TOKEN_IF:
         case TOKEN_REPEAT:
+        case TOKEN_WHILE:
         case TOKEN_RETURN:
         case TOKEN_CONTINUE:
         case TOKEN_STOP:
@@ -714,6 +715,25 @@ ASTNode* parse_cond_stmt(Parser* parser) {
     return create_node_with_loc(NODE_COND_STMT, node, tok);
 }
 
+ASTNode* parse_while_stmt(Parser* parser) {
+    TokenData tok = peek(parser);
+    read_token(parser); // while
+    
+    if (!expect(parser, TOKEN_LPAREN, "Expected '(' after 'while'")) return NULL;
+    ASTNode* cond = parse_expr(parser);
+    if (!expect(parser, TOKEN_RPAREN, "Expected ')' after condition")) return NULL;
+    
+    ASTNode* body = parse_block(parser);
+    
+    IterStmtNode* iter = (IterStmtNode*)malloc(sizeof(IterStmtNode));
+    iter->init = NULL;
+    iter->condition = cond;
+    iter->increment = NULL;
+    iter->body = body;
+    
+    return create_node_with_loc(NODE_ITER_STMT, iter, tok);
+}
+
 ASTNode* parse_iter_stmt(Parser* parser) {
     TokenData tok = peek(parser);
     read_token(parser); // REPEAT
@@ -777,7 +797,7 @@ ASTNode* parse_simple_stmt(Parser* parser) {
         return parse_ass_stmt(parser);
     }
     
-    // Safe Panic: Consume bad token so we don't loop
+    // Safe Panic: read bad token so we don't loop
     error(parser, "Unknown simple statement");
     read_token(parser); 
     return NULL;
@@ -786,12 +806,13 @@ ASTNode* parse_simple_stmt(Parser* parser) {
 ASTNode* parse_compound_stmt(Parser* parser) {
     if (check(parser, TOKEN_IF)) return parse_cond_stmt(parser);
     if (check(parser, TOKEN_REPEAT)) return parse_iter_stmt(parser);
+    if (check(parser, TOKEN_WHILE)) return parse_while_stmt(parser);
     if (check(parser, TOKEN_LBRACE)) return parse_block(parser);
     return NULL;
 }
 
 ASTNode* parse_statement(Parser* parser) {
-    if (check(parser, TOKEN_IF) || check(parser, TOKEN_REPEAT) || check(parser, TOKEN_LBRACE)) {
+    if (check(parser, TOKEN_IF) || check(parser, TOKEN_REPEAT) ||  check(parser, TOKEN_WHILE) || check(parser, TOKEN_LBRACE)) {
         return parse_compound_stmt(parser);
     }
     
